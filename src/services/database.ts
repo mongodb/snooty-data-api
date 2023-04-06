@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId } from "mongodb";
+import { Db, MongoClient, ObjectId, WithId } from "mongodb";
 import { ResponseAssets } from "../types";
 
 interface StaticAsset {
@@ -66,29 +66,23 @@ export const closeDBConnection = async () => {
   }
 };
 
-export const getAllBuildData = async (buildId: string | ObjectId) => {
+const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   const dbSession = await db();
-  const id = new ObjectId(buildId);
-
-  const query = { build_id: id };
-  const documents = await dbSession.collection<PageDocument>('documents').find(query).toArray();
-  const metadata = await dbSession.collection('metadata').find(query).toArray();
-  console.log(documents.length);
-  console.log(metadata.length);
 
   // An image asset will have a consistent checksum, but can have different filenames (keys),
   // even within the same repo.
   const assetData: Record<string, Set<string>> = {};
-  documents.forEach((page) => {
+  pages.forEach((page) => {
     page.static_assets.forEach(({ checksum, key }) => {
       if (!assetData[checksum]) {
-        // Data will be null for now
         assetData[checksum] = new Set();
       }
       assetData[checksum].add(key);
     });
   });
 
+  // Populate binary data for every asset checksum and convert set of filenames 
+  // to array for JSON compatibility
   const checksums = Object.keys(assetData);
   const assets = await dbSession.collection<AssetDocument>('assets').find({ _id: { $in: checksums } }).toArray();
   console.log(`Found assets: ${assets.length}`);
@@ -102,10 +96,23 @@ export const getAllBuildData = async (buildId: string | ObjectId) => {
   });
   console.log(responseAssets);
 
-  const res = {
+  return responseAssets;
+};
+
+export const findAllBuildData = async (buildId: string | ObjectId) => {
+  const dbSession = await db();
+  const id = new ObjectId(buildId);
+
+  const query = { build_id: id };
+  const documents = await dbSession.collection<PageDocument>('documents').find(query).toArray();
+  const metadata = await dbSession.collection('metadata').find(query).toArray();
+  console.log(documents.length);
+  console.log(metadata.length);
+  const responseAssets = await findAndPrepAssets(documents);
+
+  return {
     documents,
     metadata,
-    responseAssets,
+    assets: responseAssets,
   };
-  return res;
 };

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
 
-import { closeDBConnection, getAllBuildData } from './services/database';
+import { closeDBConnection, findAllBuildData } from './services/database';
 
 const PORT = process.env.PORT || 3000;
 
@@ -22,7 +22,7 @@ app.get('/:repo/:branch/documents/:buildId', async (req, res) => {
   };
   console.log(obj);
 
-  const data = await getAllBuildData(req.params.buildId);
+  const data = await findAllBuildData(req.params.buildId);
   res.send(data);
 });
 
