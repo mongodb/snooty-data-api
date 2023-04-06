@@ -1,7 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
-
+// Configure dotenv early so env variables can be read in imported files
 dotenv.config();
+
+import { closeDBConnection, getAllBuildData } from './services/database';
 
 const PORT = process.env.PORT || 3000;
 
@@ -11,15 +13,28 @@ app.get('/', (req, res) => {
   res.send('Hello world');
 });
 
-app.get('/:repo/:branch/documents/:buildId', (req, res) => {
+app.get('/:repo/:branch/documents/:buildId', async (req, res) => {
   const obj = {
     repo: req.params.repo,
     branch: req.params.branch,
     buildId: req.params.buildId,
+    documents: [],
   };
-  res.send(obj);
+  console.log(obj);
+
+  const data = await getAllBuildData(req.params.buildId);
+  res.send(data);
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server listening on port: ${PORT}`);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGTERM signal received');
+  server.close(async () => {
+    console.log('Closing server');
+    await closeDBConnection();
+    console.log('DB closed');
+  });
 });
