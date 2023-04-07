@@ -63,6 +63,7 @@ const db = async () => {
 export const closeDBConnection = async () => {
   if (client) {
     await client.close();
+    console.log('MongoDB Client closed successfully');
   }
 };
 
