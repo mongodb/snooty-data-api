@@ -1,10 +1,10 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import { MongoClient } from 'mongodb';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
 import documentsRouter from './routes/documents';
-import { closeDBConnection, findAllBuildData, setupClient } from './services/database';
-import { MongoClient } from 'mongodb';
+import { setupClient } from './services/database';
 
 interface AppSettings {
   mongoClient?: MongoClient;
