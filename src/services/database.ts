@@ -95,7 +95,6 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
       filenames: [...assetData[checksum]],
     };
   });
-  console.log(responseAssets);
 
   return responseAssets;
 };
