@@ -3,13 +3,20 @@ import dotenv from 'dotenv';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
 import documentsRouter from './routes/documents';
+import { closeDBConnection, findAllBuildData, setupClient } from './services/database';
+import { MongoClient } from 'mongodb';
 
-const app = express();
+interface AppSettings {
+  mongoClient?: MongoClient;
+};
 
-app.get('/', (req, res) => {
-  res.send('Hello world');
-});
+export const setupApp = async ({ mongoClient }: AppSettings) => {
+  if (mongoClient) {
+    await setupClient(mongoClient);
+  }
 
-app.use('/documents', documentsRouter);
+  const app = express();
+  app.use('/documents', documentsRouter);
 
-export default app;
+  return app;
+};

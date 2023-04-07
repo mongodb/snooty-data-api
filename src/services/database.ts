@@ -24,34 +24,23 @@ interface PageDocument {
 
 const ATLAS_URI = process.env.ATLAS_URI || "";
 
-const client = new MongoClient(ATLAS_URI, { monitorCommands:true });
+let client: MongoClient;
 let dbInstance: Db;
 
-// For debugging purposes. TODO-3622: Remove event listeners when done?
-client.on('serverOpening', () => {
-  console.log('MongoDB Client - server opening');
-});
+// Set up MongoClient for application
+export const setupClient = async (mongoClient: MongoClient) => {
+  client = mongoClient;
+  await client.connect();
+  const dbName = process.env.DB_NAME || 'snooty_dev';
+  dbInstance = client.db(dbName);
+}
 
-client.on('serverClosed', () => {
-  console.log('MongoDB Client - server closed');
-});
-
-client.on('topologyOpening', (event) => {
-  console.log('MongoDB Client - topology opening');
-  console.log(event);
-});
-
-client.on('topologyClosed', (event) => {
-  console.log('MongoDB Client - topology closed');
-  console.log(event);
-});
-
+// Sets up the MongoClient and returns the newly created db instance, if they don't
+// already exist
 const db = async () => {
   if (!dbInstance) {
     try {
-      await client.connect();
-      const dbName = process.env.DB_NAME || 'snooty_dev';
-      dbInstance = client.db(dbName);
+      await setupClient(new MongoClient(ATLAS_URI));
     } catch (e) {
       console.error(e);
       throw e;
@@ -71,7 +60,7 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   const dbSession = await db();
 
   // An image asset will have a consistent checksum, but can have different filenames (keys),
-  // even within the same repo.
+  // even within the same repo. This is more of an edge case and is not ideal.
   const assetData: Record<string, Set<string>> = {};
   pages.forEach((page) => {
     page.static_assets.forEach(({ checksum, key }) => {
@@ -82,12 +71,16 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
     });
   });
 
+  const checksums = Object.keys(assetData);
+  const responseAssets: ResponseAssets = {};
+  if (!checksums.length) {
+    return responseAssets;
+  }
+
   // Populate binary data for every asset checksum and convert set of filenames 
   // to array for JSON compatibility
-  const checksums = Object.keys(assetData);
   const assets = await dbSession.collection<AssetDocument>('assets').find({ _id: { $in: checksums } }).toArray();
   console.log(`Found assets: ${assets.length}`);
-  const responseAssets: ResponseAssets = {};
   assets.forEach((asset) => {
     const checksum = asset._id;
     responseAssets[checksum] = {
@@ -106,8 +99,6 @@ export const findAllBuildData = async (buildId: string | ObjectId) => {
   const query = { build_id: id };
   const documents = await dbSession.collection<PageDocument>('documents').find(query).toArray();
   const metadata = await dbSession.collection('metadata').find(query).toArray();
-  console.log(documents.length);
-  console.log(metadata.length);
   const responseAssets = await findAndPrepAssets(documents);
 
   return {
