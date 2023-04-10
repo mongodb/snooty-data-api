@@ -15,7 +15,6 @@ const constructNewBuildIds = (docs: any) => {
 
 const loadSampleDataInCollection = async (db: Db, documents: any, collectionName: string, constructBuildIds?: boolean) => {
   const collection = db.collection(collectionName);
-  console.log(collectionName);
   if (constructBuildIds) {
     constructNewBuildIds(documents);
   }
