@@ -7,7 +7,7 @@ const router = express.Router();
 // documents (page ASTs, metadata, assets) associated for that build
 router.get('/:buildId', async (req, res) => {
   const data = await findAllBuildData(req.params.buildId);
-  res.send(data);
+  res.send({ data, timestamp: Date.now() });
 });
 
 export default router;
