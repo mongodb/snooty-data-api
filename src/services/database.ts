@@ -1,5 +1,4 @@
 import { Db, MongoClient, ObjectId, WithId } from "mongodb";
-import { ResponseAssets } from "../types";
 
 interface StaticAsset {
   checksum: string;
@@ -20,6 +19,12 @@ interface PageDocument {
   static_assets: StaticAsset[];
   build_id: ObjectId;
   created_at: Date;
+}
+
+interface ResponseAsset {
+  checksum: string,
+  filenames: string[];
+  data: BinaryData;
 }
 
 const ATLAS_URI = process.env.ATLAS_URI || "";
@@ -72,7 +77,7 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   });
 
   const checksums = Object.keys(assetData);
-  const responseAssets: ResponseAssets = {};
+  const responseAssets: ResponseAsset[] = [];
   if (!checksums.length) {
     return responseAssets;
   }
@@ -80,13 +85,13 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   // Populate binary data for every asset checksum and convert set of filenames 
   // to array for JSON compatibility
   const assets = await dbSession.collection<AssetDocument>('assets').find({ _id: { $in: checksums } }).toArray();
-  console.log(`Found assets: ${assets.length}`);
   assets.forEach((asset) => {
     const checksum = asset._id;
-    responseAssets[checksum] = {
+    responseAssets.push({
+      checksum,
       data: asset.data,
       filenames: [...assetData[checksum]],
-    };
+    });
   });
 
   return responseAssets;
