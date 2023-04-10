@@ -9,6 +9,10 @@
     "start": "node ./dist/index.js",
     "test": "jest"
   },
+  "engines": {
+    "node": "^18",
+    "npm": "8.*"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
