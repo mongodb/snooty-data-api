@@ -5,10 +5,10 @@ name: default
 
 trigger:
   branch:
-  - "DOP-3622"
+  - "DOP-3623"
 
 steps:
-- name: publish
+- name: publish-staging
   image: plugins/kaniko-ecr
   settings:
     create_repository: true
