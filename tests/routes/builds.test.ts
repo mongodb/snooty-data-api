@@ -43,7 +43,7 @@ describe('Test documents routes', () => {
   });
   
   it('should return all data based on build ID', async () => {
-    const res = await request(app).get('/documents/642ec854c38bedd45ed3d1fc');
+    const res = await request(app).get('/builds/642ec854c38bedd45ed3d1fc/documents');
     expect(res.status).toBe(200);
     expect(res.body.data.documents).toHaveLength(3);
     expect(res.body.data.metadata).toHaveLength(1);

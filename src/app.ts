@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { MongoClient } from 'mongodb';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
-import documentsRouter from './routes/documents';
+import buildsRouter from './routes/builds';
 import { setupClient } from './services/database';
 
 interface AppSettings {
@@ -16,7 +16,7 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   }
 
   const app = express();
-  app.use('/documents', documentsRouter);
+  app.use('/builds', buildsRouter);
 
   return app;
 };
