@@ -5,6 +5,7 @@ name: default
 
 trigger:
   branch:
+  # TODO-3623: change to main branch before merging
   - "DOP-3623"
 
 steps:
