@@ -12,3 +12,9 @@ ingress:
   enabled: true
   hosts:
     - snooty-data-api.docs.staging.corp.mongodb.com
+
+resources:
+  limits:
+    memory: 1300Mi
+  requests:
+    memory: 1100Mi
