@@ -36,7 +36,7 @@ let dbInstance: Db;
 export const setupClient = async (mongoClient: MongoClient) => {
   client = mongoClient;
   await client.connect();
-  const dbName = process.env.DB_NAME || 'snooty_dev';
+  const dbName = process.env.SNOOTY_DB_NAME || 'snooty_dev';
   dbInstance = client.db(dbName);
 }
 
