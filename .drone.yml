@@ -1,12 +1,37 @@
 ---
 kind: pipeline
 type: kubernetes
-name: default
+name: test
 
 trigger:
   branch:
-  # TODO-3623: change to main branch before merging
+  - main
+  # TODO-3623: Remove before merging
   - "DOP-3623"
+  event:
+  - push
+  - pull-request
+
+steps:
+- name: test
+  image: node:18-alpine
+  commands:
+  - npm ci
+  - npm run test
+
+---
+depends_on: ['test']
+kind: pipeline
+type: kubernetes
+name: deployment
+
+trigger:
+  branch:
+  - main
+  # TODO-3623: Remove before merging
+  - "DOP-3623"
+  event:
+  - push
 
 steps:
 - name: publish-staging
