@@ -1,0 +1,14 @@
+service:
+  targetPort: 3000
+
+env:
+  DB_NAME: snooty_stage
+  PORT: 3000
+
+envSecrets:
+  ATLAS_URI: snooty-data-api-staging
+
+ingress:
+  enabled: true
+  hosts:
+    - snooty-data-api.docs.staging.corp.mongodb.com
