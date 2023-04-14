@@ -1,0 +1,30 @@
+[
+  {
+    "project": "docs",
+    "branch": "master",
+    "title": "MongoDB Manual",
+    "eol": false,
+    "slugToTitle": {},
+    "toctreeorder": {},
+    "parentPaths": {},
+    "static_files": {},
+    "build_id": "642ec854c38bedd45ed3d1fc",
+    "created_at": {
+      "$date": "2023-04-06T13:25:40.000Z"
+    }
+  },
+  {
+    "project": "irrelevant-docs",
+    "branch": "master",
+    "title": "Irrelevant Docs Build Example",
+    "eol": false,
+    "slugToTitle": {},
+    "toctreeorder": {},
+    "parentPaths": {},
+    "static_files": {},
+    "build_id": "642ec858c38bedd45ed3dd54",
+    "created_at": {
+      "$date": "2023-04-06T13:25:40.000Z"
+    }
+  }
+]
