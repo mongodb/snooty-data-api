@@ -45,3 +45,17 @@ To run tests, use:
 ```
 npm run test
 ```
+
+## Linting
+
+We use `eslint` for linting and `prettier` for formatting. `prettier` is configured to run on lint, so feel free to just use:
+
+```
+npm run lint
+```
+
+If there are errors flagged through `prettier`, use:
+
+```
+npm run format:fix
+```
