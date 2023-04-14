@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId, WithId } from "mongodb";
+import { Db, MongoClient, ObjectId, WithId } from 'mongodb';
 
 interface StaticAsset {
   checksum: string;
@@ -14,7 +14,7 @@ interface PageDocument {
   _id: ObjectId;
   page_id: string;
   filename: string;
-  ast: Object;
+  ast: object;
   source: string;
   static_assets: StaticAsset[];
   build_id: ObjectId;
@@ -22,12 +22,12 @@ interface PageDocument {
 }
 
 interface ResponseAsset {
-  checksum: string,
+  checksum: string;
   filenames: string[];
   data: BinaryData;
 }
 
-const ATLAS_URI = process.env.ATLAS_URI || "";
+const ATLAS_URI = process.env.ATLAS_URI || '';
 
 let client: MongoClient;
 let dbInstance: Db;
@@ -38,7 +38,7 @@ export const setupClient = async (mongoClient: MongoClient) => {
   await client.connect();
   const dbName = process.env.SNOOTY_DB_NAME || 'snooty_dev';
   dbInstance = client.db(dbName);
-}
+};
 
 // Sets up the MongoClient and returns the newly created db instance, if they don't
 // already exist
@@ -82,9 +82,12 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
     return responseAssets;
   }
 
-  // Populate binary data for every asset checksum and convert set of filenames 
+  // Populate binary data for every asset checksum and convert set of filenames
   // to array for JSON compatibility
-  const assets = await dbSession.collection<AssetDocument>('assets').find({ _id: { $in: checksums } }).toArray();
+  const assets = await dbSession
+    .collection<AssetDocument>('assets')
+    .find({ _id: { $in: checksums } })
+    .toArray();
   assets.forEach((asset) => {
     const checksum = asset._id;
     responseAssets.push({

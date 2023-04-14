@@ -8,7 +8,7 @@ import { setupClient } from './services/database';
 
 interface AppSettings {
   mongoClient?: MongoClient;
-};
+}
 
 export const setupApp = async ({ mongoClient }: AppSettings) => {
   if (mongoClient) {
