@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: kubernetes
-name: test
+name: lint-and-test
 
 trigger:
   branch:
@@ -13,10 +13,11 @@ trigger:
   - pull-request
 
 steps:
-- name: test
+- name: default
   image: node:18
   commands:
   - npm ci
+  - npm run lint
   - npm run test
 
 ---
