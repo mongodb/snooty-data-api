@@ -9,8 +9,9 @@ trigger:
   # TODO-3623: Remove before merging
   - "DOP-3623"
   event:
-  - push
-  - pull-request
+    include:
+    - push
+    - pull-request
 
 steps:
 - name: default
