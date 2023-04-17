@@ -3,6 +3,12 @@ kind: pipeline
 type: kubernetes
 name: test
 
+trigger:
+  branch:
+  - main
+  event:
+  - push
+
 steps:
 - name: default
   image: node:18
