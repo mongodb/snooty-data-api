@@ -3,15 +3,6 @@ kind: pipeline
 type: kubernetes
 name: test
 
-trigger:
-  branch:
-  - main
-  # TODO-3623: Remove before merging
-  - "DOP-3623"
-  event:
-  - push
-  - pull-request
-
 steps:
 - name: test
   image: node:18
