@@ -10,7 +10,7 @@ trigger:
   - push
 
 steps:
-- name: default
+- name: test
   image: node:18
   commands:
   - npm ci
@@ -26,8 +26,6 @@ name: deployment
 trigger:
   branch:
   - main
-  # TODO-3623: Remove before merging
-  - "DOP-3623"
   event:
   - push
 
