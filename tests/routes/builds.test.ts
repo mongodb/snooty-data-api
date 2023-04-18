@@ -11,22 +11,27 @@ const constructNewBuildIds = (docs: any) => {
   docs.forEach((doc: any) => {
     doc.build_id = new ObjectId(doc.build_id);
   });
-}
+};
 
-const loadSampleDataInCollection = async (db: Db, documents: any, collectionName: string, constructBuildIds?: boolean) => {
+const loadSampleDataInCollection = async (
+  db: Db,
+  documents: any,
+  collectionName: string,
+  constructBuildIds?: boolean
+) => {
   const collection = db.collection(collectionName);
   if (constructBuildIds) {
     constructNewBuildIds(documents);
   }
   await collection.insertMany(documents);
-}
+};
 
 const loadData = async (client: MongoClient) => {
   const db = client.db('snooty_dev');
   await loadSampleDataInCollection(db, samplePageDocuments, 'documents', true);
   await loadSampleDataInCollection(db, sampleMetadata, 'metadata', true);
   await loadSampleDataInCollection(db, sampleAssets, 'assets');
-}
+};
 
 describe('Test documents routes', () => {
   // process.env.ATLAS_URI should be defined by default in globalSetup.ts
@@ -41,7 +46,7 @@ describe('Test documents routes', () => {
   afterAll(async () => {
     await client.close();
   });
-  
+
   it('should return all data based on build ID', async () => {
     const res = await request(app).get('/builds/642ec854c38bedd45ed3d1fc/documents');
     expect(res.status).toBe(200);
