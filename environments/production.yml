@@ -11,7 +11,7 @@ envSecrets:
 ingress:
   enabled: true
   hosts:
-    - snooty-data-api.docs.production.corp.mongodb.com
+    - snooty-data-api.docs.prod.corp.mongodb.com
 
 resources:
   limits:
