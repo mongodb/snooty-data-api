@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId, WithId } from 'mongodb';
+import { Db, Filter, MongoClient, ObjectId, WithId } from 'mongodb';
 
 interface StaticAsset {
   checksum: string;
@@ -21,11 +21,24 @@ interface PageDocument {
   created_at: Date;
 }
 
+interface UpdatedPageDocument {
+  _id: ObjectId;
+  page_id: string;
+  filename: string;
+  ast: object;
+  static_assets: StaticAsset[];
+  created_at: Date;
+  updated_at: Date;
+  deleted: boolean;
+}
+
 interface ResponseAsset {
   checksum: string;
   filenames: string[];
   data: BinaryData;
 }
+
+type PageDocType = PageDocument | UpdatedPageDocument;
 
 const ATLAS_URI = process.env.ATLAS_URI || '';
 
@@ -61,7 +74,7 @@ export const closeDBConnection = async () => {
   }
 };
 
-const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
+const findAndPrepAssets = async (pages: PageDocType[]) => {
   const dbSession = await db();
 
   // An image asset will have a consistent checksum, but can have different filenames (keys),
@@ -100,13 +113,10 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   return responseAssets;
 };
 
-export const findAllBuildData = async (buildId: string | ObjectId) => {
+const findAllBuildData = async (filter: Filter<any>, pagesColl: string) => {
   const dbSession = await db();
-  const id = new ObjectId(buildId);
-
-  const query = { build_id: id };
-  const documents = await dbSession.collection<PageDocument>('documents').find(query).toArray();
-  const metadata = await dbSession.collection('metadata').find(query).toArray();
+  const documents = await dbSession.collection<PageDocType>(pagesColl).find(filter).toArray();
+  const metadata = await dbSession.collection('metadata').find(filter).toArray();
   const responseAssets = await findAndPrepAssets(documents);
 
   return {
@@ -114,4 +124,22 @@ export const findAllBuildData = async (buildId: string | ObjectId) => {
     metadata,
     assets: responseAssets,
   };
+};
+
+export const findAllBuildDataById = async (buildId: string | ObjectId) => {
+  const id = new ObjectId(buildId);
+  const query = { build_id: id };
+  const pagesCollection = 'documents';
+  return findAllBuildData(query, pagesCollection);
+};
+
+export const findAllBuildDataByProject = async (projectName: string, branch: string) => {
+  const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
+  const pageIdPrefix = `${projectName}/${user}/${branch}`;
+  const query = { 
+    page_id: { $regex: new RegExp(`^${pageIdPrefix}`) },
+    deleted: false,
+  };
+  const pagesCollection = 'updated_documents';
+  return findAllBuildData(query, pagesCollection);
 };
