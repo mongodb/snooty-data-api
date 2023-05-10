@@ -25,4 +25,3 @@ describe('Test projects routes', () => {
     expect(res.body.timestamp).toBeTruthy();
   });
 });
-

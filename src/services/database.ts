@@ -117,7 +117,7 @@ const findAndPrepAssets = async (pages: PageDocType[]) => {
   return responseAssets;
 };
 
-const findPagesAndAssets = async(filter: Filter<any>, pagesColl: string) => {
+const findPagesAndAssets = async (filter: Filter<any>, pagesColl: string) => {
   const dbSession = await db();
   const documents = await dbSession.collection<PageDocType>(pagesColl).find(filter).toArray();
   const responseAssets = await findAndPrepAssets(documents);
@@ -145,7 +145,7 @@ export const findAllBuildDataById = async (buildId: string | ObjectId) => {
 export const findAllBuildDataByProject = async (projectName: string, branch: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
   const pageIdPrefix = `${projectName}/${user}/${branch}`;
-  const pagesQuery = { 
+  const pagesQuery = {
     page_id: { $regex: new RegExp(`^${pageIdPrefix}`) },
   };
   const metadataQuery = {
@@ -155,7 +155,12 @@ export const findAllBuildDataByProject = async (projectName: string, branch: str
 
   const dbSession = await db();
   // Get the latest metadata document available for the Snooty project + branch
-  const metadata = await dbSession.collection(METADATA_COLLECTION).find(metadataQuery).sort('created_at', -1).limit(1).toArray();
+  const metadata = await dbSession
+    .collection(METADATA_COLLECTION)
+    .find(metadataQuery)
+    .sort('created_at', -1)
+    .limit(1)
+    .toArray();
   const pagesAndAssets = await findPagesAndAssets(pagesQuery, UPDATED_PAGES_COLLECTION);
 
   return {

@@ -26,7 +26,7 @@ const loadSampleDataInCollection = async (
   await collection.insertMany(documents);
 };
 
-const loadData = async() => {
+const loadData = async () => {
   const client = new MongoClient(process.env.ATLAS_URI!);
   const db = client.db(process.env.SNOOTY_DB_NAME!);
 
