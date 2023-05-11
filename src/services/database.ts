@@ -146,7 +146,7 @@ export const findAllBuildDataByProject = async (projectName: string, branch: str
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
   const pageIdPrefix = `${projectName}/${user}/${branch}`;
   const pagesQuery = {
-    page_id: { $regex: new RegExp(`^${pageIdPrefix}`) },
+    page_id: { $regex: new RegExp(`^${pageIdPrefix}/`) },
   };
   const metadataQuery = {
     project: projectName,
