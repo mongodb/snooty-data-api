@@ -1,5 +1,5 @@
 import express from 'express';
-import { findAllBuildDataByProject } from '../services/database';
+import { findAllBuildDataByProject, findUpdatedBuildDataByProject } from '../services/database';
 
 const router = express.Router();
 
@@ -9,6 +9,13 @@ const router = express.Router();
 router.get('/:snootyProject/:branch/documents', async (req, res) => {
   const { snootyProject, branch } = req.params;
   const data = await findAllBuildDataByProject(snootyProject, branch);
+  res.send({ data, timestamp: Date.now() });
+});
+
+router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, res) => {
+  const { snootyProject, branch, timestamp } = req.params;
+  const timestampNum = parseInt(timestamp);
+  const data = await findUpdatedBuildDataByProject(snootyProject, branch, timestampNum);
   res.send({ data, timestamp: Date.now() });
 });
 

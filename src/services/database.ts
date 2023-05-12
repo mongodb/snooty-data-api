@@ -49,6 +49,12 @@ const ASSETS_COLLECTION = 'assets';
 let client: MongoClient;
 let dbInstance: Db;
 
+const getPageIdQuery = (projectName: string, branch: string) => {
+  const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
+  const pageIdPrefix = `${projectName}/${user}/${branch}`;
+  return { $regex: new RegExp(`^${pageIdPrefix}/`) };
+};
+
 // Set up MongoClient for application
 export const setupClient = async (mongoClient: MongoClient) => {
   client = mongoClient;
@@ -128,6 +134,11 @@ const findPagesAndAssets = async (filter: Filter<any>, pagesColl: string) => {
   };
 };
 
+const findLatestMetadata = async (filter: Filter<any>) => {
+  const dbSession = await db();
+  return dbSession.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
+};
+
 export const findAllBuildDataById = async (buildId: string | ObjectId) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
@@ -161,6 +172,26 @@ export const findAllBuildDataByProject = async (projectName: string, branch: str
     .sort('created_at', -1)
     .limit(1)
     .toArray();
+  const pagesAndAssets = await findPagesAndAssets(pagesQuery, UPDATED_PAGES_COLLECTION);
+
+  return {
+    metadata,
+    ...pagesAndAssets,
+  };
+};
+
+export const findUpdatedBuildDataByProject = async (projectName: string, branch: string, timestamp: number) => {
+  const updatedAtQuery = new Date(timestamp);
+  const pagesQuery = {
+    page_id: getPageIdQuery(projectName, branch),
+    updated_at: { $gt: updatedAtQuery },
+  };
+  const metadataQuery = {
+    project: projectName,
+    branch,
+  };
+
+  const metadata = await findLatestMetadata(metadataQuery);
   const pagesAndAssets = await findPagesAndAssets(pagesQuery, UPDATED_PAGES_COLLECTION);
 
   return {
