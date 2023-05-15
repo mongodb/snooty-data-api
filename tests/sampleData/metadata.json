@@ -26,5 +26,19 @@
     "created_at": {
       "$date": "2023-04-06T13:25:40.000Z"
     }
+  },
+  {
+    "project": "docs",
+    "branch": "master",
+    "title": "MongoDB Manual",
+    "eol": false,
+    "slugToTitle": {},
+    "toctreeorder": {},
+    "parentPaths": {},
+    "static_files": {},
+    "build_id": "642ec854c38bedd45ed31234",
+    "created_at": {
+      "$date": "2023-04-06T14:25:40.000Z"
+    }
   }
 ]
