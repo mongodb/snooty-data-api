@@ -164,14 +164,8 @@ export const findAllBuildDataByProject = async (projectName: string, branch: str
     branch,
   };
 
-  const dbSession = await db();
   // Get the latest metadata document available for the Snooty project + branch
-  const metadata = await dbSession
-    .collection(METADATA_COLLECTION)
-    .find(metadataQuery)
-    .sort('created_at', -1)
-    .limit(1)
-    .toArray();
+  const metadata = await findLatestMetadata(metadataQuery);
   const pagesAndAssets = await findPagesAndAssets(pagesQuery, UPDATED_PAGES_COLLECTION);
 
   return {
