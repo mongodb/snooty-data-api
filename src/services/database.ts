@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId, WithId } from 'mongodb';
+import { Db, Filter, MongoClient, ObjectId } from 'mongodb';
 
 interface StaticAsset {
   checksum: string;
@@ -21,13 +21,30 @@ interface PageDocument {
   created_at: Date;
 }
 
+interface UpdatedPageDocument {
+  _id: ObjectId;
+  page_id: string;
+  filename: string;
+  ast: object;
+  static_assets: StaticAsset[];
+  created_at: Date;
+  updated_at: Date;
+  deleted: boolean;
+}
+
 interface ResponseAsset {
   checksum: string;
   filenames: string[];
   data: BinaryData;
 }
 
+type PageDocType = PageDocument | UpdatedPageDocument;
+
 const ATLAS_URI = process.env.ATLAS_URI || '';
+const METADATA_COLLECTION = 'metadata';
+const PAGES_COLLECTION = 'documents';
+const UPDATED_PAGES_COLLECTION = 'updated_documents';
+const ASSETS_COLLECTION = 'assets';
 
 let client: MongoClient;
 let dbInstance: Db;
@@ -61,7 +78,7 @@ export const closeDBConnection = async () => {
   }
 };
 
-const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
+const findAndPrepAssets = async (pages: PageDocType[]) => {
   const dbSession = await db();
 
   // An image asset will have a consistent checksum, but can have different filenames (keys),
@@ -85,7 +102,7 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   // Populate binary data for every asset checksum and convert set of filenames
   // to array for JSON compatibility
   const assets = await dbSession
-    .collection<AssetDocument>('assets')
+    .collection<AssetDocument>(ASSETS_COLLECTION)
     .find({ _id: { $in: checksums } })
     .toArray();
   assets.forEach((asset) => {
@@ -100,18 +117,54 @@ const findAndPrepAssets = async (pages: WithId<PageDocument>[]) => {
   return responseAssets;
 };
 
-export const findAllBuildData = async (buildId: string | ObjectId) => {
+const findPagesAndAssets = async (filter: Filter<any>, pagesColl: string) => {
   const dbSession = await db();
-  const id = new ObjectId(buildId);
-
-  const query = { build_id: id };
-  const documents = await dbSession.collection<PageDocument>('documents').find(query).toArray();
-  const metadata = await dbSession.collection('metadata').find(query).toArray();
+  const documents = await dbSession.collection<PageDocType>(pagesColl).find(filter).toArray();
   const responseAssets = await findAndPrepAssets(documents);
 
   return {
     documents,
-    metadata,
     assets: responseAssets,
+  };
+};
+
+export const findAllBuildDataById = async (buildId: string | ObjectId) => {
+  const id = new ObjectId(buildId);
+  const query = { build_id: id };
+
+  const dbSession = await db();
+  const metadata = await dbSession.collection(METADATA_COLLECTION).find(query).toArray();
+  const pagesAndAssets = await findPagesAndAssets(query, PAGES_COLLECTION);
+
+  return {
+    metadata,
+    ...pagesAndAssets,
+  };
+};
+
+export const findAllBuildDataByProject = async (projectName: string, branch: string) => {
+  const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
+  const pageIdPrefix = `${projectName}/${user}/${branch}`;
+  const pagesQuery = {
+    page_id: { $regex: new RegExp(`^${pageIdPrefix}/`) },
+  };
+  const metadataQuery = {
+    project: projectName,
+    branch,
+  };
+
+  const dbSession = await db();
+  // Get the latest metadata document available for the Snooty project + branch
+  const metadata = await dbSession
+    .collection(METADATA_COLLECTION)
+    .find(metadataQuery)
+    .sort('created_at', -1)
+    .limit(1)
+    .toArray();
+  const pagesAndAssets = await findPagesAndAssets(pagesQuery, UPDATED_PAGES_COLLECTION);
+
+  return {
+    metadata,
+    ...pagesAndAssets,
   };
 };

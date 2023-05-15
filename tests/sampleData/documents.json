@@ -11,7 +11,7 @@
     }
   },
   {
-    "page_id": "docs/docsworkerx-large/master/tutorial/insert-documents",
+    "page_id": "docs/docsworker-xlarge/master/tutorial/insert-documents",
     "filename": "tutorial/insert-documents.txt",
     "ast": {},
     "source": "1 asset example",
@@ -27,7 +27,7 @@
     }
   },
   {
-    "page_id": "docs/raymundrodriguez/master/tutorial/update-documents",
+    "page_id": "docs/docsworker-xlarge/master/tutorial/update-documents",
     "filename": "tutorial/update-documents.txt",
     "ast": {},
     "source": "2 assets example",
