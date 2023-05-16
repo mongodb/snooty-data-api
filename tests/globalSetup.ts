@@ -1,7 +1,7 @@
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import samplePageDocuments from './sampleData/documents.json';
-import sampleUpdatedPageDocuments from './sampleData/updatedDocuments.json';
+import { sampleUpdatedPageDocuments } from './sampleData/updatedDocuments';
 import sampleMetadata from './sampleData/metadata.json';
 import sampleAssets from './sampleData/assets.json';
 
