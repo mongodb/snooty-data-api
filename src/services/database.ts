@@ -5,12 +5,12 @@ interface StaticAsset {
   key: string;
 }
 
-interface AssetDocument {
+export interface AssetDocument {
   _id: string;
   data: BinaryData;
 }
 
-interface PageDocument {
+export interface PageDocument {
   _id: ObjectId;
   page_id: string;
   filename: string;
@@ -32,13 +32,13 @@ interface UpdatedPageDocument {
   deleted: boolean;
 }
 
-interface ResponseAsset {
+export interface ResponseAsset {
   checksum: string;
   filenames: string[];
   data: BinaryData;
 }
 
-type PageDocType = PageDocument | UpdatedPageDocument;
+export type PageDocType = PageDocument | UpdatedPageDocument;
 
 const ATLAS_URI = process.env.ATLAS_URI || '';
 const METADATA_COLLECTION = 'metadata';
@@ -65,7 +65,7 @@ export const setupClient = async (mongoClient: MongoClient) => {
 
 // Sets up the MongoClient and returns the newly created db instance, if they don't
 // already exist
-const db = async () => {
+export const db = async () => {
   if (!dbInstance) {
     try {
       await setupClient(new MongoClient(ATLAS_URI));
@@ -121,6 +121,22 @@ const findAndPrepAssets = async (pages: PageDocType[]) => {
   });
 
   return responseAssets;
+};
+
+export const findPagesByBuildId = async (buildId: string | ObjectId) => {
+  const id = new ObjectId(buildId);
+  const query = { build_id: id };
+  
+  const dbSession = await db();
+  return dbSession.collection<PageDocument>(PAGES_COLLECTION).find(query);
+};
+
+export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
+  const id = new ObjectId(buildId);
+  const query = { build_id: id };
+
+  const dbSession = await db();
+  return dbSession.collection(METADATA_COLLECTION).findOne(query);
 };
 
 const findPagesAndAssets = async (filter: Filter<any>, pagesColl: string) => {
