@@ -1,57 +1,59 @@
-import { FindCursor, ObjectId } from "mongodb";
+import { FindCursor } from "mongodb";
 import { Readable } from 'stream';
-import { AssetDocument, PageDocType, ResponseAsset, db } from "./database";
+import { AssetDocument, PageDocType, db } from "./database";
 
-export class DataStreamer {
-  readableStream: Readable;
+type ChunkType = 'metadata' | 'page' | 'asset';
+
+/**
+ * A custom Readable class that pushes to the stream's buffer as it asynchronously 
+ * reads MongoDB data. Since the data is loaded in async but reading is done in-order, 
+ * `DataStream`'s queue of data could potentially be the total size of all documents.
+ * 
+ * See `DataStream._read()` for more details on implementation.
+ * 
+ * This class is intended to pipe its data to the Express Response object
+ * in order to avoid sending the entire body of data at a single moment. Sending
+ * everything all at the same time could result in slow responses.
+ */
+export class DataStream extends Readable {
   pagesCursor: FindCursor<PageDocType>;
-  assetIds: string[];
   metadataDoc: any;
+  isReading: boolean;
+  assetData: Record<string, Set<string>>;
 
   constructor(pagesCursor: FindCursor<PageDocType>, metadataDoc: any) {
-    this.readableStream = new Readable();
+    super({ objectMode: true });
+
     this.pagesCursor = pagesCursor;
-    this.assetIds = [];
     this.metadataDoc = metadataDoc;
+    this.isReading = false;
+    this.assetData = {};
+
+    this.on('error', (err) => {
+      console.error(`Error encountered while streaming: ${err}` );
+      // Ensure stream is destroyed to avoid memory leaks
+      this.destroy();
+    });
   }
 
-  private async _streamMetadata() {
-    const chunk = {
-      type: 'metadata',
-      data: this.metadataDoc,
-    };
-    this.readableStream.push(JSON.stringify(chunk));
-  }
-
-  /**
-   * Adds pages to the readable stream and identifies if the page has assets.
-   * 
-   * @returns Assets associated with pages
-   */
   private async _streamPages() {
-    const assetData: Record<string, Set<string>> = {};
-
     for await (const page of this.pagesCursor) {
-      const chunk = { type: 'page', data: page };
-
       // Grab static assets for each page. 1 static asset can be used on more than
       // 1 page. Due to legacy considerations, 1 image can also be referred by more
       // than 1 filename.
       page.static_assets.forEach(({ checksum, key: filename }) => {
-        if (!assetData[checksum]) {
-          assetData[checksum] = new Set();
+        if (!this.assetData[checksum]) {
+          this.assetData[checksum] = new Set();
         }
-        assetData[checksum].add(filename);
+        this.assetData[checksum].add(filename);
       });
 
-      this.readableStream.push(JSON.stringify(chunk));
+      this._pushChunk('page', page);
     }
-
-    return assetData;
   }
 
-  private async _streamAssets(assetData: Record<string, Set<string>>) {
-    const checksums = Object.keys(assetData);
+  private async _streamAssets() {
+    const checksums = Object.keys(this.assetData);
     if (!checksums.length) {
       return;
     }
@@ -61,100 +63,47 @@ export class DataStreamer {
 
     for await (const asset of assetsCursor) {
       const checksum = asset._id;
-      const chunk = {
-        type: 'asset',
-        data: {
-          checksum,
-          assetData: asset.data,
-          filenames: [...assetData[checksum]],
-        },
-      };
-      this.readableStream.push(JSON.stringify(chunk));
-    }
-  }
-
-  async createStream() {
-    await this._streamMetadata();
-    const assetData = await this._streamPages();
-    await this._streamAssets(assetData);
-
-    // End stream
-    this.readableStream.push(null);
-    return this.readableStream;
-  }
-
-  async streamPages() {
-    const assetData: Record<string, Set<string>> = {};
-
-    for await (const doc of this.pagesCursor) {
-      const data = { type: 'page', data: doc };
-
-      // An image asset will have a consistent checksum, but can have different filenames (keys),
-      // even within the same repo. This is more of an edge case and is not ideal.
-      doc.static_assets.forEach(({ checksum, key }) => {
-        if (!assetData[checksum]) {
-          assetData[checksum] = new Set();
-        }
-        assetData[checksum].add(key);
+      this._pushChunk('asset', {
+        checksum,
+        assetData: asset.data,
+        filenames: [...this.assetData[checksum]],
       });
-
-      this.readableStream.push(JSON.stringify(data));
     }
-
-    const checksums = Object.keys(assetData);
-    const responseAssets: ResponseAsset[] = [];
-    if (!checksums.length) {
-      return responseAssets;
-    }
-
-    // Populate binary data for every asset checksum and convert set of filenames
-    // to array for JSON compatibility
-    const dbSession = await db();
-    const assetsCursor = dbSession
-      .collection<AssetDocument>('assets')
-      .find({ _id: { $in: checksums } });
-
-    for await (const asset of assetsCursor) {
-      const checksum = asset._id;
-      const data = {
-        type: 'asset',
-        data: {
-          checksum,
-          assetData: asset.data,
-          filenames: [...assetData[checksum]],
-        },
-      };
-
-      this.readableStream.push(JSON.stringify(data));
-    }
-
-    // assetsCursor.forEach((asset) => {
-    //   const checksum = asset._id;
-    //   const data = {
-    //     type: 'asset',
-    //     data: {
-    //       checksum,
-    //       assetData: asset.data,
-    //       filenames: [...assetData[checksum]],
-    //     },
-    //   };
-
-    //   this.readableStream.push(JSON.stringify(data));
-    // });
-
-    const metadataQuery = {
-      build_id: new ObjectId('646bae4bc41d7b9a472b51ec'),
-    };
-    const res = await dbSession.collection('metadata').find(metadataQuery).toArray();
-    console.log(res);
-    const data = {
-      type: 'metadata',
-      data: res[0],
-    };
-    this.readableStream.push(JSON.stringify(data));
-
-    this.readableStream.push(JSON.stringify({ 'test': 'object' }));
-
-    this.readableStream.push(null);
   }
-}
+
+  private _streamMetadata() {
+    this._pushChunk('metadata', this.metadataDoc);
+  }
+
+  private _pushChunk(type: ChunkType, data: any) {
+    const chunk = { type, data };
+    return this.push(JSON.stringify(chunk));
+  }
+  
+  /*
+   * Called internally when streaming.
+   * 
+   * Ideally, we'd add as many documents to the queue as possible until `this.push()` 
+   * returns `false`, and then subsequent calls to `_read()` will continue traversal
+   * of the cursor(s) to add more documents to the queue. Instead, the stream never 
+   * calls`_read()` again after a certain point and no new data is transmitted.
+   * This could be due to `_read()` attempting to be performed asynchronously and
+   * there's a mismatch between data being buffered, and data being consumed:
+   * 
+   * https://github.com/nodejs/node/blob/d39ba8aaf4501fc4eb5b6e8dbb8279b42b7f533b/lib/internal/streams/readable.js#L647
+   * 
+   * As a workaround, we attempt to keep pushing to the queue, regardless of size.
+   */
+  async _read() {
+    if (!this.isReading) {
+      this.isReading = true;
+
+      this._streamMetadata();
+      await this._streamPages();
+      await this._streamAssets();
+
+      this.push(null);
+      this.isReading = false;
+    }
+  }
+};
