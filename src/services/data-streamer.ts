@@ -1,6 +1,6 @@
-import { FindCursor } from "mongodb";
+import { FindCursor, WithId } from "mongodb";
 import { Readable } from 'stream';
-import { AssetDocument, PageDocType, db } from "./database";
+import { PageDocType, findAssetsByChecksums } from "./database";
 
 type ChunkType = 'metadata' | 'page' | 'asset';
 
@@ -17,7 +17,7 @@ type ChunkType = 'metadata' | 'page' | 'asset';
  */
 export class DataStream extends Readable {
   pagesCursor: FindCursor<PageDocType>;
-  metadataDoc: any;
+  metadataDoc: WithId<Document> | null;
   isReading: boolean;
   assetData: Record<string, Set<string>>;
 
@@ -58,8 +58,7 @@ export class DataStream extends Readable {
       return;
     }
 
-    const dbSession = await db();
-    const assetsCursor = dbSession.collection<AssetDocument>('assets').find({ _id: { $in: checksums } });
+    const assetsCursor = await findAssetsByChecksums(checksums);
 
     for await (const asset of assetsCursor) {
       const checksum = asset._id;
@@ -72,7 +71,9 @@ export class DataStream extends Readable {
   }
 
   private _streamMetadata() {
-    this._pushChunk('metadata', this.metadataDoc);
+    if (this.metadataDoc) {
+      this._pushChunk('metadata', this.metadataDoc);
+    }
   }
 
   private _pushChunk(type: ChunkType, data: any) {
