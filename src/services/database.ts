@@ -108,7 +108,6 @@ export const findUpdatedPagesByProject = async (project: string, branch: string,
 export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-
   const dbSession = await db();
   return dbSession.collection(METADATA_COLLECTION).findOne(query);
 };
