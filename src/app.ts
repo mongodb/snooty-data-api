@@ -1,4 +1,4 @@
-import express, { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
+import express, { ErrorRequestHandler } from 'express';
 import dotenv from 'dotenv';
 import { MongoClient } from 'mongodb';
 // Configure dotenv early so env variables can be read in imported files
@@ -12,6 +12,7 @@ interface AppSettings {
 }
 
 // General error handler; called at usage of next() in routes
+// eslint-disable-next-line  @typescript-eslint/no-unused-vars
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(`Error Request Handler caught an error: ${err}`);
   const status = err.status || 500;
@@ -21,7 +22,7 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // Ensure response ends if headers were already sent
     res.end();
   }
-}
+};
 
 export const setupApp = async ({ mongoClient }: AppSettings) => {
   if (mongoClient) {
@@ -32,6 +33,6 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   app.use('/builds', buildsRouter);
   app.use('/projects', projectsRouter);
   app.use(errorHandler);
-  
+
   return app;
 };

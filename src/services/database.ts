@@ -97,10 +97,10 @@ export const findPagesByProject = async (project: string, branch: string) => {
   return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp:  number) => {
+export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
-  const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery }  };
+  const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
   const dbSession = await db();
   return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };

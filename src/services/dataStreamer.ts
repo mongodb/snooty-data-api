@@ -1,12 +1,12 @@
-import { FindCursor } from "mongodb";
-import { AssetDocument, PageDocType, findAssetsByChecksums } from "./database";
-import { Response } from "express";
-import { stringer } from "stream-json/jsonl/Stringer";
+import { FindCursor } from 'mongodb';
+import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
+import { Response } from 'express';
+import { stringer } from 'stream-json/jsonl/Stringer';
 
 export interface StreamData {
   type: string;
   data: any;
-};
+}
 
 const streamMetadata = (res: Response, metadataDoc: any) => {
   const chunk: StreamData = {
@@ -16,7 +16,7 @@ const streamMetadata = (res: Response, metadataDoc: any) => {
   res.write(`${JSON.stringify(chunk)}\n`);
 };
 
-const streamAssets = async (res:Response, assetData: Record<string, Set<string>>) => {
+const streamAssets = async (res: Response, assetData: Record<string, Set<string>>) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     return;
@@ -52,12 +52,17 @@ const streamAssets = async (res:Response, assetData: Record<string, Set<string>>
  * pause and resume automatically as data is streamed. Memory usage should be limited
  * to the set batch size of MongoDB cursors, which determines how many documents to keep
  * in memory.
- * 
- * @param res 
- * @param pagesCursor 
- * @param metadataDoc 
+ *
+ * @param res
+ * @param pagesCursor
+ * @param metadataDoc
  */
-export const streamData = async (res: Response, pagesCursor: FindCursor<PageDocType>, metadataDoc: any, timestamp: number) => {
+export const streamData = async (
+  res: Response,
+  pagesCursor: FindCursor<PageDocType>,
+  metadataDoc: any,
+  timestamp: number
+) => {
   res.once('error', (err) => {
     console.error(`Error with response pipeline: ${err}`);
     // Destroy streams in hopes of preventing memory leaks

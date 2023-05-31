@@ -1,11 +1,11 @@
-import { StreamData } from "../../src/services/dataStreamer";
+import { StreamData } from '../../src/services/dataStreamer';
 
 interface ParsedData {
   pages: StreamData[];
   metadata: StreamData[];
   assets: StreamData[];
   timestamps: StreamData[];
-};
+}
 
 const TYPE_TO_BUCKET = {
   page: 'pages',
@@ -18,9 +18,9 @@ const TYPE_TO_BUCKET = {
  * Parse Supertest Response text to organize streamed data based on their data type.
  * Consider this a workaround to the way Supertest returns fetched data that is
  * streamed in chunks.
- * 
+ *
  * @param text - The text of the Supertest Response object
- * @returns 
+ * @returns
  */
 export const parseResponse = (text: string) => {
   // Text should be in JSONL format

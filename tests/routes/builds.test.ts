@@ -18,7 +18,7 @@ describe('Test documents routes', () => {
 
   it('should return all data based on build ID', async () => {
     const res = await request(app).get('/builds/642ec854c38bedd45ed3d1fc/documents');
-    expect(res.status).toBe(200);  
+    expect(res.status).toBe(200);
     const { pages, metadata, assets, timestamps } = parseResponse(res.text);
     expect(pages).toHaveLength(3);
     expect(metadata).toHaveLength(1);
