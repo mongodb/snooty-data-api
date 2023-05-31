@@ -1,6 +1,6 @@
 import express from 'express';
 import { findLatestMetadata, findPagesByProject, findUpdatedPagesByProject } from '../services/database';
-import { DataStream, streamData } from '../services/data-streamer';
+import { streamData } from '../services/data-streamer';
 
 const router = express.Router();
 
@@ -12,19 +12,7 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   try {
     const metadataDoc = await findLatestMetadata(snootyProject, branch);
     const pagesCursor = await findPagesByProject(snootyProject, branch);
-    const stream = new DataStream(pagesCursor, metadataDoc);
-    stream.pipe(res);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get('/:snootyProject/:branch/documents/test', async (req, res, next) => {
-  const { snootyProject, branch } = req.params;
-  try {
-    const metadataDoc = await findLatestMetadata(snootyProject, branch);
-    const pagesCursor = await findPagesByProject(snootyProject, branch);
-    await streamData(res, pagesCursor, metadataDoc);
+    await streamData(res, pagesCursor, metadataDoc, Date.now());
   } catch (err) {
     next(err);
   }
@@ -36,8 +24,7 @@ router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, r
   try {
     const metadataDoc = findLatestMetadata(snootyProject, branch);
     const pagesCursor = await findUpdatedPagesByProject(snootyProject, branch, timestampNum);
-    const stream = new DataStream(pagesCursor, metadataDoc);
-    stream.pipe(res);
+    await streamData(res, pagesCursor, metadataDoc, Date.now());
   } catch (err) {
     next(err);
   }

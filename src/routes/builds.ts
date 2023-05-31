@@ -1,6 +1,6 @@
 import express from 'express';
 import { findOneMetadataByBuildId, findPagesByBuildId } from '../services/database';
-import { DataStream } from '../services/data-streamer';
+import { streamData } from '../services/data-streamer';
 
 const router = express.Router();
 
@@ -11,8 +11,7 @@ router.get('/:buildId/documents', async (req, res, next) => {
   try {
     const pagesCursor = await findPagesByBuildId(buildId);
     const metadataDoc = await findOneMetadataByBuildId(buildId);
-    const stream = new DataStream(pagesCursor, metadataDoc);
-    stream.pipe(res);
+    await streamData(res, pagesCursor, metadataDoc, Date.now())
   } catch (err) {
     next(err);
   }
