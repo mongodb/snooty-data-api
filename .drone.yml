@@ -27,7 +27,6 @@ name: staging-build
 trigger:
   branch:
   - main
-  - DOP-3702
   event:
   - push
 
