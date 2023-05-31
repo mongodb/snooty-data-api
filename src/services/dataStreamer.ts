@@ -3,8 +3,13 @@ import { AssetDocument, PageDocType, findAssetsByChecksums } from "./database";
 import { Response } from "express";
 import { stringer } from "stream-json/jsonl/Stringer";
 
+export interface StreamData {
+  type: string;
+  data: any;
+};
+
 const streamMetadata = (res: Response, metadataDoc: any) => {
-  const chunk = {
+  const chunk: StreamData = {
     type: 'metadata',
     data: metadataDoc,
   };
@@ -21,14 +26,15 @@ const streamAssets = async (res:Response, assetData: Record<string, Set<string>>
   const assetStream = assetsCursor.stream({
     transform(doc: AssetDocument) {
       const checksum = doc._id;
-      return ({
+      const newDoc: StreamData = {
         type: 'asset',
         data: {
           checksum,
           assetData: doc.data,
           filenames: [...assetData[checksum]],
         },
-      });
+      };
+      return newDoc;
     },
   });
 
@@ -59,7 +65,7 @@ export const streamData = async (res: Response, pagesCursor: FindCursor<PageDocT
   });
 
   // Return timestamp to inform Gatsby Cloud when data was last queried
-  const timestampChunk = { type: 'timestamp', data: timestamp };
+  const timestampChunk: StreamData = { type: 'timestamp', data: timestamp };
   res.write(`${JSON.stringify(timestampChunk)}\n`);
 
   streamMetadata(res, metadataDoc);
@@ -76,10 +82,11 @@ export const streamData = async (res: Response, pagesCursor: FindCursor<PageDocT
         }
         assetData[checksum].add(filename);
       });
-      return ({ 
+      const newDoc: StreamData = {
         type: 'page',
         data: doc,
-      }) ;
+      };
+      return newDoc;
     },
   });
 

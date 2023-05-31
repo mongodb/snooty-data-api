@@ -1,6 +1,6 @@
 import express from 'express';
 import { findOneMetadataByBuildId, findPagesByBuildId } from '../services/database';
-import { streamData } from '../services/data-streamer';
+import { streamData } from '../services/dataStreamer';
 
 const router = express.Router();
 
