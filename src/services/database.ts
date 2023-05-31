@@ -5,7 +5,7 @@ interface StaticAsset {
   key: string;
 }
 
-interface AssetDocument {
+export interface AssetDocument {
   _id: string;
   data: BinaryData;
 }

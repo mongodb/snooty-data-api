@@ -13,9 +13,14 @@ interface AppSettings {
 
 // General error handler; called at usage of next() in routes
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  console.error(err);
+  console.error(`Error Request Handler caught an error: ${err}`);
   const status = err.status || 500;
-  res.sendStatus(status);
+  if (res.writable && !res.headersSent) {
+    res.sendStatus(status);
+  } else {
+    // Ensure response ends if headers were already sent
+    res.end();
+  }
 }
 
 export const setupApp = async ({ mongoClient }: AppSettings) => {

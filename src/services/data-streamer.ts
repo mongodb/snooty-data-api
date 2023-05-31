@@ -1,6 +1,8 @@
 import { FindCursor, WithId } from "mongodb";
 import { Readable } from 'stream';
-import { PageDocType, findAssetsByChecksums } from "./database";
+import { AssetDocument, PageDocType, findAssetsByChecksums } from "./database";
+import { Response } from "express";
+import { stringer } from "stream-json/jsonl/Stringer";
 
 type ChunkType = 'metadata' | 'page' | 'asset';
 
@@ -107,4 +109,107 @@ export class DataStream extends Readable {
       this.isReading = false;
     }
   }
+};
+
+const streamMetadata = (res: Response, metadataDoc: any) => {
+  const readable = new Readable();
+  readable.push(JSON.stringify({
+    type: 'metadata',
+    data: metadataDoc,
+  }));
+  readable.push(null);
+  readable.pipe(res, { end: false });
+  readable.once('error', (err) => {
+    console.error(`There was an error streaming metadata: ${err}`);
+    readable.destroy();
+  });
+};
+
+const streamAssets = async (res:Response, assetData: Record<string, Set<string>>) => {
+  const checksums = Object.keys(assetData);
+  if (!checksums.length) {
+    return;
+  }
+
+  const assetsCursor = await findAssetsByChecksums(checksums);
+  const assetStream = assetsCursor.stream({
+    transform(doc: AssetDocument) {
+      const checksum = doc._id;
+      return ({
+        type: 'asset',
+        data: {
+          checksum,
+          assetData: doc.data,
+          filenames: [...assetData[checksum]],
+        },
+      });
+    },
+  });
+
+  // Use stringer() to efficiently transform documents/JS objects to stringified JSON
+  assetStream.pipe(stringer()).pipe(res);
+  assetStream.once('error', (err) => {
+    console.error(`There was an error streaming assets: ${err}`);
+    assetStream.destroy();
+  });
+};
+
+/**
+ * Creates a pipeline from build artifacts to the Express Response. Documents are
+ * transformed to denote respective data types (metadata, page, asset). Pipelines should
+ * pause and resume automatically as data is streamed. Memory usage should be limited
+ * to the set batch size of MongoDB cursors, which determines how many documents to keep
+ * in memory.
+ * 
+ * @param res 
+ * @param pagesCursor 
+ * @param metadataDoc 
+ */
+export const streamData = async (res: Response, pagesCursor: FindCursor<PageDocType>, metadataDoc: any) => {
+  res.once('error', (err) => {
+    console.error(`Error with response pipeline: ${err}`);
+    // Destroy streams in hopes of preventing memory leaks
+    res.destroy();
+  });
+
+  streamMetadata(res, metadataDoc);
+
+  const assetData: Record<string, Set<string>> = {};
+  const pagesStream = pagesCursor.stream({
+    transform(doc: PageDocType) {
+      // Grab static assets for each page. 1 static asset can be used on more than
+      // 1 page. Due to legacy considerations, 1 image can also be referred by more
+      // than 1 filename. This is suboptimal and should be changed in the future
+      doc.static_assets.forEach(({ checksum, key: filename }) => {
+        if (!assetData[checksum]) {
+          assetData[checksum] = new Set();
+        }
+        assetData[checksum].add(filename);
+      });
+      return ({ 
+        type: 'page',
+        data: doc,
+      }) ;
+    },
+  });
+
+  // We use pipe() instead of promisified pipeline() here due to weird behavior with
+  // having 3 or more streams in the same pipeline and setting `end` to false.
+  pagesStream.pipe(stringer()).pipe(res, { end: false });
+  pagesStream.once('end', async () => {
+    try {
+      await streamAssets(res, assetData);
+    } catch (err) {
+      // Don't throw error since it'll just be a fatal error. Report it
+      // and end the stream since response headers could already have been
+      // sent by then.
+      console.error(`Error trying to stream assets: ${err}`);
+      res.end();
+      res.destroy();
+    }
+  });
+  pagesStream.once('error', (err) => {
+    console.error(`There was an error streaming pages: ${err}`);
+    pagesStream.destroy();
+  });
 };
