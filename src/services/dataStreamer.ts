@@ -1,22 +1,16 @@
 import { FindCursor } from 'mongodb';
-import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
 import { Response } from 'express';
-import { stringer } from 'stream-json/jsonl/Stringer';
+import { Readable } from 'stream';
+import { chain } from 'stream-chain';
+import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
+import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
 
 export interface StreamData {
   type: string;
   data: any;
 }
 
-const streamMetadata = (res: Response, metadataDoc: any) => {
-  const chunk: StreamData = {
-    type: 'metadata',
-    data: metadataDoc,
-  };
-  res.write(`${JSON.stringify(chunk)}\n`);
-};
-
-const streamAssets = async (res: Response, assetData: Record<string, Set<string>>) => {
+const streamAssets = async (res: Response, pipeline: Duplex, assetData: Record<string, Set<string>>) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     return;
@@ -38,8 +32,8 @@ const streamAssets = async (res: Response, assetData: Record<string, Set<string>
     },
   });
 
-  // Use stringer() to efficiently transform documents/JS objects to JSONL format
-  assetStream.pipe(stringer()).pipe(res);
+  // Close the stream here
+  assetStream.pipe(pipeline);
   assetStream.once('error', (err) => {
     console.error(`There was an error streaming assets: ${err}`);
     assetStream.destroy();
@@ -69,11 +63,16 @@ export const streamData = async (
     res.destroy();
   });
 
+  const pipeline = chain([stringer(), res]);
+  const readable = new Readable({ objectMode: true });
   // Return timestamp to inform Gatsby Cloud when data was last queried
   const timestampChunk: StreamData = { type: 'timestamp', data: timestamp };
-  res.write(`${JSON.stringify(timestampChunk)}\n`);
-
-  streamMetadata(res, metadataDoc);
+  readable.push(timestampChunk);
+  const metadataChunk: StreamData = { type: 'metadata', data: metadataDoc };
+  readable.push(metadataChunk);
+  readable.push(null);
+  // Keep pipeline open for other data. Last stream should be in charge of ending
+  readable.pipe(pipeline, { end: false });
 
   const assetData: Record<string, Set<string>> = {};
   const pagesStream = pagesCursor.stream({
@@ -97,12 +96,10 @@ export const streamData = async (
 
   // We use pipe() instead of promisified pipeline() here due to weird behavior with
   // having 3 or more streams in the same pipeline and setting `end` to false.
-  pagesStream.pipe(stringer()).pipe(res, { end: false });
+  pagesStream.pipe(pipeline, { end: false });
   pagesStream.once('end', async () => {
     try {
-      // Write newline to separate between data types to maintain JSONL format
-      res.write('\n');
-      await streamAssets(res, assetData);
+      await streamAssets(res, pipeline, assetData);
     } catch (err) {
       // Don't throw error since it'll just be a fatal error. Report it
       // and end the stream since response headers could already have been
