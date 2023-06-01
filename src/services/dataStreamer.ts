@@ -10,7 +10,7 @@ export interface StreamData {
   data: any;
 }
 
-const streamAssets = async (res: Response, pipeline: Duplex, assetData: Record<string, Set<string>>) => {
+const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     return;
@@ -99,7 +99,7 @@ export const streamData = async (
   pagesStream.pipe(pipeline, { end: false });
   pagesStream.once('end', async () => {
     try {
-      await streamAssets(res, pipeline, assetData);
+      await streamAssets(pipeline, assetData);
     } catch (err) {
       // Don't throw error since it'll just be a fatal error. Report it
       // and end the stream since response headers could already have been
