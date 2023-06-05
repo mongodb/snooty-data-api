@@ -1,5 +1,8 @@
+import { ObjectId } from 'mongodb';
+
 export const sampleUpdatedPageDocuments = [
   {
+    _id: new ObjectId('646fa1958c4f35b1d3d83edf'),
     page_id: 'docs/docsworker-xlarge/master/data-center-awareness',
     filename: 'data-center-awareness.txt',
     ast: {
@@ -11,6 +14,7 @@ export const sampleUpdatedPageDocuments = [
     deleted: false,
   },
   {
+    _id: new ObjectId('646fa1958c4f35b1d3d83ee0'),
     page_id: 'docs/docsworker-xlarge/master/data-center-foo',
     filename: 'data-center-foo.txt',
     ast: {
@@ -22,6 +26,7 @@ export const sampleUpdatedPageDocuments = [
     deleted: true,
   },
   {
+    _id: new ObjectId('646fa1958c4f35b1d3d83ee1'),
     page_id: 'docs/docsworker-xlarge/master/tutorial/insert-documents',
     filename: 'tutorial/insert-documents.txt',
     ast: {
@@ -38,6 +43,7 @@ export const sampleUpdatedPageDocuments = [
     deleted: false,
   },
   {
+    _id: new ObjectId('646fa1958c4f35b1d3d83ee2'),
     page_id: 'docs/docsworker-xlarge/master/tutorial/update-documents',
     filename: 'tutorial/update-documents.txt',
     ast: {},
@@ -56,6 +62,7 @@ export const sampleUpdatedPageDocuments = [
     deleted: false,
   },
   {
+    _id: new ObjectId('646fa1958c4f35b1d3d83ee3'),
     page_id: 'not-docs/docsworker-xlarge/master/tutorial/update-documents',
     filename: 'tutorial/update-documents.txt',
     ast: {},
@@ -65,6 +72,7 @@ export const sampleUpdatedPageDocuments = [
     deleted: false,
   },
   {
+    _id: new ObjectId('646fa1958c4f35b1d3d83ee4'),
     page_id: 'docs/docsworker-xlarge/not-master/tutorial/update-documents',
     filename: 'tutorial/update-documents.txt',
     ast: {},

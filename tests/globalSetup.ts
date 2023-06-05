@@ -1,28 +1,12 @@
-import { Db, MongoClient, ObjectId } from 'mongodb';
+import { Db, MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import samplePageDocuments from './sampleData/documents.json';
+import { samplePageDocuments } from './sampleData/documents';
 import { sampleUpdatedPageDocuments } from './sampleData/updatedDocuments';
-import sampleMetadata from './sampleData/metadata.json';
+import { sampleMetadata } from './sampleData/metadata';
 import sampleAssets from './sampleData/assets.json';
 
-// Replaces string build_id with ObjectId to ensure reference is accurate
-// Using $oid in the json yields an actual object when inserted
-const constructNewBuildIds = (docs: any) => {
-  docs.forEach((doc: any) => {
-    doc.build_id = new ObjectId(doc.build_id);
-  });
-};
-
-const loadSampleDataInCollection = async (
-  db: Db,
-  documents: any,
-  collectionName: string,
-  constructBuildIds?: boolean
-) => {
+const loadSampleDataInCollection = async (db: Db, documents: any, collectionName: string) => {
   const collection = db.collection(collectionName);
-  if (constructBuildIds) {
-    constructNewBuildIds(documents);
-  }
   await collection.insertMany(documents);
 };
 
@@ -30,9 +14,9 @@ const loadData = async () => {
   const client = new MongoClient(process.env.ATLAS_URI!);
   const db = client.db(process.env.SNOOTY_DB_NAME!);
 
-  await loadSampleDataInCollection(db, samplePageDocuments, 'documents', true);
-  await loadSampleDataInCollection(db, sampleUpdatedPageDocuments, 'updated_documents', true);
-  await loadSampleDataInCollection(db, sampleMetadata, 'metadata', true);
+  await loadSampleDataInCollection(db, samplePageDocuments, 'documents');
+  await loadSampleDataInCollection(db, sampleUpdatedPageDocuments, 'updated_documents');
+  await loadSampleDataInCollection(db, sampleMetadata, 'metadata');
   await loadSampleDataInCollection(db, sampleAssets, 'assets');
 
   await client.close();

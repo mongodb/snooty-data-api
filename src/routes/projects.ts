@@ -1,22 +1,33 @@
 import express from 'express';
-import { findAllBuildDataByProject, findUpdatedBuildDataByProject } from '../services/database';
+import { findLatestMetadata, findPagesByProject, findUpdatedPagesByProject } from '../services/database';
+import { streamData } from '../services/dataStreamer';
 
 const router = express.Router();
 
 // Given a Snooty project name + branch combination, return all build data
 // (page ASTs, metadata, assets) for that combination. This should always be the
 // latest build data at time of call
-router.get('/:snootyProject/:branch/documents', async (req, res) => {
+router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   const { snootyProject, branch } = req.params;
-  const data = await findAllBuildDataByProject(snootyProject, branch);
-  res.send({ data, timestamp: Date.now() });
+  try {
+    const metadataDoc = await findLatestMetadata(snootyProject, branch);
+    const pagesCursor = await findPagesByProject(snootyProject, branch);
+    await streamData(res, pagesCursor, metadataDoc, Date.now());
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, res) => {
+router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, res, next) => {
   const { snootyProject, branch, timestamp } = req.params;
   const timestampNum = parseInt(timestamp);
-  const data = await findUpdatedBuildDataByProject(snootyProject, branch, timestampNum);
-  res.send({ data, timestamp: Date.now() });
+  try {
+    const metadataDoc = findLatestMetadata(snootyProject, branch);
+    const pagesCursor = await findUpdatedPagesByProject(snootyProject, branch, timestampNum);
+    await streamData(res, pagesCursor, metadataDoc, Date.now());
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
