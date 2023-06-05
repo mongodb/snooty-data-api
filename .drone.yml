@@ -27,6 +27,8 @@ name: staging-build
 trigger:
   branch:
   - main
+  # TODO-3712: Remove after testing
+  - DOP-3712
   event:
   - push
 
