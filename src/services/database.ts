@@ -1,4 +1,5 @@
 import { Db, MongoClient, ObjectId } from 'mongodb';
+import { initiateLogger } from './logger';
 
 interface StaticAsset {
   checksum: string;
@@ -40,6 +41,8 @@ const PAGES_COLLECTION = 'documents';
 const UPDATED_PAGES_COLLECTION = 'updated_documents';
 const ASSETS_COLLECTION = 'assets';
 
+const logger = initiateLogger();
+
 let client: MongoClient;
 let dbInstance: Db;
 
@@ -64,7 +67,7 @@ export const db = async () => {
     try {
       await setupClient(new MongoClient(ATLAS_URI));
     } catch (e) {
-      console.error(e);
+      logger.error(e);
       throw e;
     }
   }
@@ -74,7 +77,7 @@ export const db = async () => {
 export const closeDBConnection = async () => {
   if (client) {
     await client.close();
-    console.log('MongoDB Client closed successfully');
+    logger.info('MongoDB Client closed successfully');
   }
 };
 

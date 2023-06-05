@@ -6,17 +6,17 @@ import { closeDBConnection } from './services/database';
 import { initiateLogger } from './services/logger';
 
 const PORT = process.env.PORT || 3000;
+const logger = initiateLogger();
 
 const startServer = async () => {
   const app = await setupApp({});
-  const logger = initiateLogger();
 
   const server = app.listen(PORT, () => {
     logger.info(`Server listening on port: ${PORT}`);
   });
 
   process.on('SIGINT', async () => {
-    console.log('SIGINT signal received');
+    logger.info('SIGINT signal received');
     await closeDBConnection();
     server.close();
   });
@@ -25,6 +25,6 @@ const startServer = async () => {
 try {
   startServer();
 } catch (e) {
-  console.error(`Fatal error`, e);
+  logger.error(`Fatal error`, e);
   process.exit(1);
 }

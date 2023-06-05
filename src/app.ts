@@ -17,7 +17,7 @@ const logger = initiateLogger();
 // General error handler; called at usage of next() in routes
 // eslint-disable-next-line  @typescript-eslint/no-unused-vars
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  console.error(`Error Request Handler caught an error: ${err}`);
+  logger.error(`Error Request Handler caught an error: ${err}`);
   const status = err.status || 500;
   if (res.writable && !res.headersSent) {
     res.sendStatus(status);
