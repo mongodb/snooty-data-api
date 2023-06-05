@@ -25,6 +25,6 @@ const startServer = async () => {
 try {
   startServer();
 } catch (e) {
-  logger.error(`Fatal error`, e);
+  logger.error(`Fatal error: ${e}`);
   process.exit(1);
 }

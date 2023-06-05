@@ -7,6 +7,7 @@ import buildsRouter from './routes/builds';
 import projectsRouter from './routes/projects';
 import { setupClient } from './services/database';
 import { createMessage, initiateLogger } from './services/logger';
+import { getRequestId } from './utils';
 
 interface AppSettings {
   mongoClient?: MongoClient;
@@ -16,8 +17,9 @@ const logger = initiateLogger();
 
 // General error handler; called at usage of next() in routes
 // eslint-disable-next-line  @typescript-eslint/no-unused-vars
-const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  logger.error(`Error Request Handler caught an error: ${err}`);
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  const reqId = getRequestId(req);
+  logger.error(createMessage(`Error Request Handler caught an error: ${err}`, reqId));
   const status = err.status || 500;
   if (res.writable && !res.headersSent) {
     res.sendStatus(status);
