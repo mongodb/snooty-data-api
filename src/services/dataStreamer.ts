@@ -40,7 +40,7 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
   // Close the stream here
   assetStream.pipe(pipeline);
   assetStream.once('end', () => {
-    logger.info(createMessage(`Found ${assetCount} assets.`, reqId));
+    logger.info(createMessage(`Found ${assetCount} assets`, reqId));
   });
   assetStream.once('error', (err) => {
     logger.error(createMessage(`There was an error streaming assets: ${err}`, reqId));

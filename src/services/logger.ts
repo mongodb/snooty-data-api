@@ -31,7 +31,7 @@ export const initiateLogger = () => {
     ],
   });
 
-  logger.info('Logger created.');
+  logger.info('Logger created');
 
   return logger;
 };
