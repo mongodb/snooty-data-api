@@ -4,19 +4,23 @@ import { Readable } from 'stream';
 import { chain } from 'stream-chain';
 import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
 import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
+import { createMessage, initiateLogger } from './logger';
+
+const logger = initiateLogger();
 
 export interface StreamData {
   type: string;
   data: any;
 }
 
-const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>) => {
+const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, reqId?: string) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     return;
   }
 
   const assetsCursor = await findAssetsByChecksums(checksums);
+  let assetCount = 0;
   const assetStream = assetsCursor.stream({
     transform(doc: AssetDocument) {
       const checksum = doc._id;
@@ -28,14 +32,18 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
           filenames: [...assetData[checksum]],
         },
       };
+      assetCount++;
       return newDoc;
     },
   });
 
   // Close the stream here
   assetStream.pipe(pipeline);
+  assetStream.once('end', () => {
+    logger.info(createMessage(`Found ${assetCount} assets`, reqId));
+  });
   assetStream.once('error', (err) => {
-    console.error(`There was an error streaming assets: ${err}`);
+    logger.error(createMessage(`There was an error streaming assets: ${err}`, reqId));
     assetStream.destroy();
   });
 };
@@ -55,10 +63,12 @@ export const streamData = async (
   res: Response,
   pagesCursor: FindCursor<PageDocType>,
   metadataDoc: any,
-  timestamp: number
+  reqId?: string
 ) => {
+  const timestamp = Date.now();
+
   res.once('error', (err) => {
-    console.error(`Error with response pipeline: ${err}`);
+    logger.error(createMessage(`Error with response pipeline: ${err}`, reqId));
     // Destroy streams in hopes of preventing memory leaks
     res.destroy();
   });
@@ -68,13 +78,21 @@ export const streamData = async (
   // Return timestamp to inform Gatsby Cloud when data was last queried
   const timestampChunk: StreamData = { type: 'timestamp', data: timestamp };
   readable.push(timestampChunk);
-  const metadataChunk: StreamData = { type: 'metadata', data: metadataDoc };
-  readable.push(metadataChunk);
+  logger.info(createMessage(`Returning timestamp: ${timestamp}`, reqId));
+
+  if (metadataDoc) {
+    const metadataChunk: StreamData = { type: 'metadata', data: metadataDoc };
+    readable.push(metadataChunk);
+  }
+  const metadataCount = metadataDoc ? 1 : 0;
+  logger.info(createMessage(`Found ${metadataCount} metadata document`, reqId));
+
   readable.push(null);
   // Keep pipeline open for other data. Last stream should be in charge of ending
   readable.pipe(pipeline, { end: false });
 
   const assetData: Record<string, Set<string>> = {};
+  let pageCount = 0;
   const pagesStream = pagesCursor.stream({
     transform(doc: PageDocType) {
       // Grab static assets for each page. 1 static asset can be used on more than
@@ -90,6 +108,7 @@ export const streamData = async (
         type: 'page',
         data: doc,
       };
+      pageCount++;
       return newDoc;
     },
   });
@@ -98,19 +117,20 @@ export const streamData = async (
   // having 3 or more streams in the same pipeline and setting `end` to false.
   pagesStream.pipe(pipeline, { end: false });
   pagesStream.once('end', async () => {
+    logger.info(createMessage(`Found ${pageCount} pages`, reqId));
     try {
-      await streamAssets(pipeline, assetData);
+      await streamAssets(pipeline, assetData, reqId);
     } catch (err) {
       // Don't throw error since it'll just be a fatal error. Report it
       // and end the stream since response headers could already have been
       // sent by then.
-      console.error(`Error trying to stream assets: ${err}`);
+      logger.error(createMessage(`Error trying to stream assets: ${err}`));
       res.end();
       res.destroy();
     }
   });
   pagesStream.once('error', (err) => {
-    console.error(`There was an error streaming pages: ${err}`);
+    logger.error(createMessage(`There was an error streaming pages: ${err}`, reqId));
     pagesStream.destroy();
   });
 };
