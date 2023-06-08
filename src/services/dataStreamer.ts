@@ -22,7 +22,6 @@ interface DataStreamOptions {
 const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, reqId?: string) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
-    // End streaming
     pipeline.end();
     return;
   }
@@ -57,8 +56,7 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
 };
 
 /**
- * Given an update time, returns `true` if the update took place after the previous
- * request time.
+ * Given an update time, returns `true` if the update took place after the request time.
  *
  * @param previousTime - The timestamp used when the request was made
  * @param newTime - The datetime of the asset's last update
