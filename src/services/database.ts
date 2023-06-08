@@ -4,6 +4,7 @@ import { initiateLogger } from './logger';
 interface StaticAsset {
   checksum: string;
   key: string;
+  updated_at?: Date;
 }
 
 export interface AssetDocument {

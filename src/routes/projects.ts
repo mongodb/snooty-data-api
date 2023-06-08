@@ -14,7 +14,7 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   try {
     const metadataDoc = await findLatestMetadata(snootyProject, branch);
     const pagesCursor = await findPagesByProject(snootyProject, branch);
-    await streamData(res, pagesCursor, metadataDoc, reqId);
+    await streamData(res, pagesCursor, metadataDoc, { reqId });
   } catch (err) {
     next(err);
   }
@@ -25,9 +25,9 @@ router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, r
   const timestampNum = parseInt(timestamp);
   const reqId = getRequestId(req);
   try {
-    const metadataDoc = findLatestMetadata(snootyProject, branch);
+    const metadataDoc = await findLatestMetadata(snootyProject, branch);
     const pagesCursor = await findUpdatedPagesByProject(snootyProject, branch, timestampNum);
-    await streamData(res, pagesCursor, metadataDoc, reqId);
+    await streamData(res, pagesCursor, metadataDoc, { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true });
   } catch (err) {
     next(err);
   }

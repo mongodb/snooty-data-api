@@ -1,4 +1,4 @@
-import { FindCursor } from 'mongodb';
+import { Document, FindCursor, WithId } from 'mongodb';
 import { Response } from 'express';
 import { Readable } from 'stream';
 import { chain } from 'stream-chain';
@@ -13,9 +13,17 @@ export interface StreamData {
   data: any;
 }
 
+interface DataStreamOptions {
+  reqId?: string;
+  reqTimestamp?: number;
+  updatedAssetsOnly?: boolean;
+}
+
 const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, reqId?: string) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
+    // End streaming
+    pipeline.end();
     return;
   }
 
@@ -49,6 +57,18 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
 };
 
 /**
+ * Given an update time, returns `true` if the update took place after the previous
+ * request time.
+ * 
+ * @param previousTime - The timestamp used when the request was made
+ * @param newTime - The datetime of the asset's last update
+ */
+const isUpdated = (previousTime?: number, newTime?: Date) => {
+  if (!previousTime || !newTime) return false;
+  return newTime.getTime() > previousTime;
+};
+
+/**
  * Creates a pipeline from build artifacts to the Express Response. Documents are
  * transformed to denote respective data types (metadata, page, asset). Pipelines should
  * pause and resume automatically as data is streamed. Memory usage should be limited
@@ -62,10 +82,11 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
 export const streamData = async (
   res: Response,
   pagesCursor: FindCursor<PageDocType>,
-  metadataDoc: any,
-  reqId?: string
+  metadataDoc: WithId<Document> | null,
+  opts: DataStreamOptions = {},
 ) => {
   const timestamp = Date.now();
+  const { reqId } = opts;
 
   res.once('error', (err) => {
     logger.error(createMessage(`Error with response pipeline: ${err}`, reqId));
@@ -93,12 +114,17 @@ export const streamData = async (
 
   const assetData: Record<string, Set<string>> = {};
   let pageCount = 0;
+  const { updatedAssetsOnly, reqTimestamp } = opts;
   const pagesStream = pagesCursor.stream({
     transform(doc: PageDocType) {
       // Grab static assets for each page. 1 static asset can be used on more than
       // 1 page. Due to legacy considerations, 1 image can also be referred by more
       // than 1 filename. This is suboptimal and should be changed in the future
-      doc.static_assets.forEach(({ checksum, key: filename }) => {
+      doc.static_assets.forEach(({ checksum, key: filename, updated_at: updatedAt }) => {
+        // Skip to next asset if the asset has not been updated
+        if (updatedAssetsOnly && !isUpdated(reqTimestamp, updatedAt)) {
+          return;
+        }
         if (!assetData[checksum]) {
           assetData[checksum] = new Set();
         }
