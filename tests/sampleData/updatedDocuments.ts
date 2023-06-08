@@ -54,7 +54,7 @@ export const sampleUpdatedPageDocuments = [
     page_id: 'docs/docsworker-xlarge/master/tutorial/update-documents',
     filename: 'tutorial/update-documents.txt',
     ast: {
-      foo: 'no updates'
+      foo: 'no updates',
     },
     static_assets: [
       {

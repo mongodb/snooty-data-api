@@ -59,7 +59,7 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
 /**
  * Given an update time, returns `true` if the update took place after the previous
  * request time.
- * 
+ *
  * @param previousTime - The timestamp used when the request was made
  * @param newTime - The datetime of the asset's last update
  */
@@ -83,7 +83,7 @@ export const streamData = async (
   res: Response,
   pagesCursor: FindCursor<PageDocType>,
   metadataDoc: WithId<Document> | null,
-  opts: DataStreamOptions = {},
+  opts: DataStreamOptions = {}
 ) => {
   const timestamp = Date.now();
   const { reqId } = opts;

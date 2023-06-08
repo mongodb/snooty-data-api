@@ -51,5 +51,4 @@ describe('Test projects routes', () => {
     const data = res.text.split('\n');
     expect(data).toMatchSnapshot();
   });
-
 });
