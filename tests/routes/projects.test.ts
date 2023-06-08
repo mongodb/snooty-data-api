@@ -26,6 +26,13 @@ describe('Test projects routes', () => {
     expect(data).toMatchSnapshot();
   });
 
+  it('should return documents with 0 assets', async () => {
+    const res = await request(app).get('/projects/irrelevant-docs/master/documents');
+    expect(res.status).toBe(200);
+    const data = res.text.split('\n');
+    expect(data).toMatchSnapshot();
+  });
+
   it('should return documents updated after given timestamp', async () => {
     const prevBuildTime = sampleMetadata[0].created_at;
     const timestamp = new Date(prevBuildTime).getTime();
@@ -34,4 +41,5 @@ describe('Test projects routes', () => {
     const data = res.text.split('\n');
     expect(data).toMatchSnapshot();
   });
+
 });

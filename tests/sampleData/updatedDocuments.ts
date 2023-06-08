@@ -74,7 +74,7 @@ export const sampleUpdatedPageDocuments = [
   },
   {
     _id: new ObjectId('646fa1958c4f35b1d3d83ee3'),
-    page_id: 'not-docs/docsworker-xlarge/master/tutorial/update-documents',
+    page_id: 'irrelevant-docs/docsworker-xlarge/master/tutorial/update-documents',
     filename: 'tutorial/update-documents.txt',
     ast: {},
     static_assets: [],
