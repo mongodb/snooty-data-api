@@ -26,6 +26,23 @@ describe('Test projects routes', () => {
     expect(data).toMatchSnapshot();
   });
 
+  it('should return documents with 0 assets', async () => {
+    const res = await request(app).get('/projects/irrelevant-docs/master/documents');
+    expect(res.status).toBe(200);
+    const data = res.text.split('\n');
+    expect(data).toMatchSnapshot();
+  });
+
+  it('should return documents with 0 pages', async () => {
+    const res = await request(app).get('/projects/no-pages/master/documents');
+    expect(res.status).toBe(200);
+    const data = res.text.split('\n');
+    // Data should only have 2 pieces of information: timestamp and metadata
+    expect(data).toHaveLength(2);
+    expect(JSON.parse(data[0])).toHaveProperty('type', 'timestamp');
+    expect(JSON.parse(data[1])).toHaveProperty('type', 'metadata');
+  });
+
   it('should return documents updated after given timestamp', async () => {
     const prevBuildTime = sampleMetadata[0].created_at;
     const timestamp = new Date(prevBuildTime).getTime();
