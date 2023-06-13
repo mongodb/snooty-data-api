@@ -4,6 +4,7 @@ service:
 env:
   PORT: 3000
   SNOOTY_DB_NAME: snooty_prod
+  POOL_DB_NAME: pool_test
 
 envSecrets:
   ATLAS_URI: snooty-data-api
