@@ -1,5 +1,6 @@
 import { Db, FindOptions, MongoClient, WithId } from 'mongodb';
 import { initiateLogger } from './logger';
+import { assertTrailingSlash } from '../utils';
 
 /** BEGIN typing for DB */
 
@@ -87,12 +88,15 @@ export const findAllRepos = async () => {
   }
 };
 
-const mapBranches = (branches: BranchEntry[], baseUrl: string, prefix: string) =>
+/** repo_branches Documents formatting utils */
+
+const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(baseUrl) + assertTrailingSlash(prefix);
+
+const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) =>
   branches.map((branchEntry) => ({
     gitBranchName: branchEntry.gitBranchName,
     active: branchEntry.active,
-    // TODO make sure base url and prefix ends in /
-    fullUrl: `${baseUrl}${prefix}` + (branchEntry.urlSlug ? `/${branchEntry.urlSlug}` : ''),
+    fullUrl: `${fullBaseUrl}` + (branchEntry.urlSlug ? `${branchEntry.urlSlug}` : ''),
   }));
 
 const mapRepos = (repo: RepoDocument): RepoResponse => ({
@@ -100,5 +104,6 @@ const mapRepos = (repo: RepoDocument): RepoResponse => ({
   project: repo.project,
   search: repo.search,
   // TODO: make env agnostic
-  branches: mapBranches(repo.branches, repo.url.dotcomprd, repo.prefix.dotcomprd),
+  // branches: mapBranches(repo.branches, repo.url.dotcomprd, repo.prefix.dotcomprd),
+  branches: mapBranches(repo.branches, getRepoUrl(repo.url.dotcomprd, repo.prefix.dotcomprd)),
 });
