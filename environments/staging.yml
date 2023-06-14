@@ -5,6 +5,7 @@ env:
   PORT: 3000
   SNOOTY_DB_NAME: snooty_stage
   POOL_DB_NAME: pool_test
+  SNOOTY_ENV: dotcomstg
 
 envSecrets:
   ATLAS_URI: snooty-data-api-staging

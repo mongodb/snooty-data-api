@@ -5,10 +5,10 @@ import { assertTrailingSlash } from '../utils';
 /** BEGIN typing for DB */
 
 type EnvKeyedObject = {
-  prd: any;
-  preprd: any;
-  dotcomstg: any;
-  dotcomprd: any;
+  prd: string;
+  preprd: string;
+  dotcomstg: string;
+  dotcomprd: string;
 };
 
 interface BranchEntry {
@@ -43,9 +43,10 @@ interface RepoResponse {
 
 /** END typing for DB */
 
-const ATLAS_URI = process.env.ATLAS_URI || '';
+const ATLAS_URI = process.env.ATLAS_URI ?? '';
 const REPOS_COLLECTION = 'repos_branches';
-const DB_NAME = process.env.POOL_DB_NAME || 'pool_test';
+const DB_NAME = process.env.POOL_DB_NAME ?? 'pool';
+const ENV_URL_KEY = (process.env.SNOOTY_ENV ?? 'dotcomprd') as keyof EnvKeyedObject;
 
 const logger = initiateLogger();
 const client = new MongoClient(ATLAS_URI);
@@ -103,7 +104,5 @@ const mapRepos = (repo: RepoDocument): RepoResponse => ({
   repoName: repo.repoName,
   project: repo.project,
   search: repo.search,
-  // TODO: make env agnostic
-  // branches: mapBranches(repo.branches, repo.url.dotcomprd, repo.prefix.dotcomprd),
-  branches: mapBranches(repo.branches, getRepoUrl(repo.url.dotcomprd, repo.prefix.dotcomprd)),
+  branches: mapBranches(repo.branches, getRepoUrl(repo.url[ENV_URL_KEY], repo.prefix[ENV_URL_KEY])),
 });
