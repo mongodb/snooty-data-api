@@ -1,9 +1,21 @@
 import express from 'express';
 import { findLatestMetadata, findPagesByProject, findUpdatedPagesByProject } from '../services/database';
 import { streamData } from '../services/dataStreamer';
+import { findAllRepos } from '../services/pool';
 import { getRequestId } from '../utils';
 
 const router = express.Router();
+
+// get all repo_branches route
+router.get('/', async (req, res, next) => {
+  try {
+    const reqId = getRequestId(req);
+    const data = await findAllRepos({}, reqId);
+    res.send({ data: data });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Given a Snooty project name + branch combination, return all build data
 // (page ASTs, metadata, assets) for that combination. This should always be the

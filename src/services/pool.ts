@@ -86,7 +86,10 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
       },
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    return await db.collection<RepoDocument>(REPOS_COLLECTION).find({}, findOptions).map(mapRepos).toArray();
+    const query: Filter<RepoDocument> = {
+      repoName: { $not: new RegExp('internal') },
+    };
+    return await db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
   } catch (e) {
     logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
     throw e;
