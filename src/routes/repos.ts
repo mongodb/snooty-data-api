@@ -1,5 +1,6 @@
 import express from 'express';
 import { findAllRepos } from '../services/pool';
+import { getRequestId } from '../utils';
 
 const router = express.Router();
 
@@ -8,8 +9,8 @@ const router = express.Router();
 // latest build data at time of call
 router.get('/', async (req, res, next) => {
   try {
-    // TODO. parse query params to transfer for filters, find options
-    const data = await findAllRepos();
+    const reqId = getRequestId(req);
+    const data = await findAllRepos({}, {}, reqId);
     res.send({ data: data });
   } catch (err) {
     next(err);

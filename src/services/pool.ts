@@ -1,5 +1,5 @@
 import { Db, Filter, FindOptions, MongoClient, WithId } from 'mongodb';
-import { initiateLogger } from './logger';
+import { createMessage, initiateLogger } from './logger';
 import { assertTrailingSlash } from '../utils';
 
 /** BEGIN typing for DB */
@@ -61,7 +61,7 @@ export const poolDb = async () => {
     dbInstance = client.db(DB_NAME);
     return dbInstance;
   } catch (e) {
-    logger.error(`Error while connecting client: ${e}`);
+    logger.error(createMessage(`Error while connecting client: ${e}`));
     throw e;
   }
 };
@@ -70,7 +70,7 @@ export const closeDBConnection = async () => {
   await client.close();
 };
 
-export const findAllRepos = async (query: Filter<RepoDocument> = {}, options: FindOptions = {}) => {
+export const findAllRepos = async (query: Filter<RepoDocument> = {}, options: FindOptions = {}, reqId?: string) => {
   try {
     const db = await poolDb();
     const defaultSort: FindOptions = {
@@ -88,7 +88,7 @@ export const findAllRepos = async (query: Filter<RepoDocument> = {}, options: Fi
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
     return await db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
   } catch (e) {
-    logger.error(`Error while finding all repos: ${e}`);
+    logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
     throw e;
   }
 };
