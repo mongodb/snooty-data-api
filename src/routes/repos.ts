@@ -7,8 +7,8 @@ const router = express.Router();
 // (page ASTs, metadata, assets) for that combination. This should always be the
 // latest build data at time of call
 router.get('/', async (req, res, next) => {
-  console.log('GET REPOS/');
   try {
+    // TODO. parse query params to transfer for filters, find options
     const data = await findAllRepos();
     res.send({ data: data });
   } catch (err) {

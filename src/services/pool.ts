@@ -1,4 +1,4 @@
-import { Db, FindOptions, MongoClient, WithId } from 'mongodb';
+import { Db, Filter, FindOptions, MongoClient, WithId } from 'mongodb';
 import { initiateLogger } from './logger';
 import { assertTrailingSlash } from '../utils';
 
@@ -70,10 +70,13 @@ export const closeDBConnection = async () => {
   await client.close();
 };
 
-export const findAllRepos = async () => {
+export const findAllRepos = async (query: Filter<RepoDocument> = {}, options: FindOptions = {}) => {
   try {
     const db = await poolDb();
-    const options: FindOptions = {
+    const defaultSort: FindOptions = {
+      sort: { repoName: 1 },
+    };
+    const strictOptions: FindOptions = {
       projection: {
         repoName: 1,
         project: 1,
@@ -82,7 +85,8 @@ export const findAllRepos = async () => {
         prefix: 1,
       },
     };
-    return await db.collection<RepoDocument>(REPOS_COLLECTION).find({}, options).map(mapRepos).toArray();
+    const findOptions = { ...defaultSort, ...options, ...strictOptions };
+    return await db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
   } catch (e) {
     logger.error(`Error while finding all repos: ${e}`);
     throw e;
