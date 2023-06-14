@@ -6,7 +6,7 @@ import { assertTrailingSlash } from '../utils';
 
 type EnvKeyedObject = {
   prd: string;
-  preprd: string;
+  stg: string;
   dotcomstg: string;
   dotcomprd: string;
 };
@@ -70,7 +70,7 @@ export const closeDBConnection = async () => {
   await client.close();
 };
 
-export const findAllRepos = async (query: Filter<RepoDocument> = {}, options: FindOptions = {}, reqId?: string) => {
+export const findAllRepos = async (options: FindOptions = {}, reqId?: string) => {
   try {
     const db = await poolDb();
     const defaultSort: FindOptions = {
@@ -86,7 +86,7 @@ export const findAllRepos = async (query: Filter<RepoDocument> = {}, options: Fi
       },
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    return await db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
+    return await db.collection<RepoDocument>(REPOS_COLLECTION).find({}, findOptions).map(mapRepos).toArray();
   } catch (e) {
     logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
     throw e;

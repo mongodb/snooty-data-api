@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', async (req, res, next) => {
   try {
     const reqId = getRequestId(req);
-    const data = await findAllRepos({}, {}, reqId);
+    const data = await findAllRepos({}, reqId);
     res.send({ data: data });
   } catch (err) {
     next(err);
