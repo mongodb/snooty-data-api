@@ -5,6 +5,7 @@ env:
   PORT: 3000
   SNOOTY_DB_NAME: snooty_prod
   POOL_DB_NAME: pool
+  SNOOTY_ENV: dotcomprd
 
 envSecrets:
   ATLAS_URI: snooty-data-api
