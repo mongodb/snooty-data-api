@@ -46,6 +46,7 @@ const logger = initiateLogger();
 
 let client: MongoClient;
 let dbInstance: Db;
+let prodDbInstance: Db; // "prod" as in this environment's production. ie. qa in staging
 
 const getPageIdQuery = (projectName: string, branch: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
@@ -56,15 +57,16 @@ const getPageIdQuery = (projectName: string, branch: string) => {
 // Set up MongoClient for application
 export const setupClient = async (mongoClient: MongoClient) => {
   client = mongoClient;
-  await client.connect();
-  const dbName = process.env.SNOOTY_DB_NAME || 'snooty_dev';
-  dbInstance = client.db(dbName);
+  return await client.connect();
 };
 
 // Sets up the MongoClient and returns the newly created db instance, if they don't
 // already exist
 export const db = async () => {
-  if (!dbInstance) {
+  if (dbInstance) {
+    return dbInstance;
+  }
+  if (!client) {
     try {
       await setupClient(new MongoClient(ATLAS_URI));
     } catch (e) {
@@ -72,7 +74,26 @@ export const db = async () => {
       throw e;
     }
   }
+  const dbName = process.env.SNOOTY_DB_NAME || 'snooty_dev';
+  dbInstance = client.db(dbName);
   return dbInstance;
+};
+
+export const prodDb = async () => {
+  if (prodDbInstance) {
+    return prodDbInstance;
+  }
+  if (!client) {
+    try {
+      await setupClient(new MongoClient(ATLAS_URI));
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  }
+  const dbName = process.env.SNOOTY_PROD_DB_NAME || 'snooty_dev';
+  prodDbInstance = client.db(dbName);
+  return prodDbInstance;
 };
 
 export const closeDBConnection = async () => {
