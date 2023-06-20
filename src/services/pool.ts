@@ -49,19 +49,32 @@ const DB_NAME = process.env.POOL_DB_NAME ?? 'pool';
 const ENV_URL_KEY = (process.env.SNOOTY_ENV ?? 'dotcomprd') as keyof EnvKeyedObject;
 
 const logger = initiateLogger();
-const client = new MongoClient(ATLAS_URI);
+let client: MongoClient;
 let dbInstance: Db | null = null;
+
+export const setupClient = async (mongoClient: MongoClient) => {
+  client = mongoClient;
+  try {
+    await client.connect();
+  } catch (e) {
+    logger.error(createMessage(`Error while connecting client: ${e}`));
+    throw e;
+  }
+  return client;
+};
 
 // exposes db instance
 export const poolDb = async () => {
   if (dbInstance) return dbInstance;
 
   try {
-    await client.connect();
+    if (!client) {
+      client = await setupClient(new MongoClient(ATLAS_URI));
+    }
     dbInstance = client.db(DB_NAME);
     return dbInstance;
   } catch (e) {
-    logger.error(createMessage(`Error while connecting client: ${e}`));
+    logger.error(createMessage(`Error while setting up pool db: ${e}`));
     throw e;
   }
 };

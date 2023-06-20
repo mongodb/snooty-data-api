@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { setupApp } from './app';
 import { closeDBConnection } from './services/database';
+import { closeDBConnection as closePoolDBConn } from './services/pool';
 import { initiateLogger } from './services/logger';
 
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ const startServer = async () => {
   process.on('SIGINT', async () => {
     logger.info('SIGINT signal received');
     await closeDBConnection();
+    await closePoolDBConn();
     server.close();
   });
 };

@@ -6,6 +6,7 @@ dotenv.config();
 import buildsRouter from './routes/builds';
 import projectsRouter from './routes/projects';
 import { setupClient } from './services/database';
+import { setupClient as setupPoolClient } from './services/pool';
 import { createMessage, initiateLogger } from './services/logger';
 import { getRequestId } from './utils';
 
@@ -42,6 +43,7 @@ const reqHandler: RequestHandler = (req, _res, next) => {
 export const setupApp = async ({ mongoClient }: AppSettings) => {
   if (mongoClient) {
     await setupClient(mongoClient);
+    await setupPoolClient(mongoClient);
   }
 
   const app = express();
