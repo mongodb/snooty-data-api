@@ -1,5 +1,6 @@
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { initiateLogger } from './logger';
+import { Request } from 'express';
 
 interface StaticAsset {
   checksum: string;
@@ -96,6 +97,8 @@ export const prodDb = async () => {
   return prodDbInstance;
 };
 
+const getDb = async (req?: Request) => (req?.originalUrl.includes('/prod/') ? prodDb() : db());
+
 export const closeDBConnection = async () => {
   if (client) {
     await client.close();
@@ -103,43 +106,43 @@ export const closeDBConnection = async () => {
   }
 };
 
-export const findAssetsByChecksums = async (checksums: string[]) => {
-  const dbSession = await db();
+export const findAssetsByChecksums = async (checksums: string[], req?: Request) => {
+  const dbSession = await getDb(req);
   return dbSession.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
 };
 
-export const findPagesByBuildId = async (buildId: string | ObjectId) => {
+export const findPagesByBuildId = async (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  const dbSession = await db();
+  const dbSession = await getDb(req);
   return dbSession.collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProject = async (project: string, branch: string) => {
+export const findPagesByProject = async (project: string, branch: string, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
-  const dbSession = await db();
+  const dbSession = await getDb(req);
   return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number) => {
+export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
-  const dbSession = await db();
+  const dbSession = await getDb(req);
   return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
+export const findOneMetadataByBuildId = async (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  const dbSession = await db();
+  const dbSession = await getDb(req);
   return dbSession.collection(METADATA_COLLECTION).findOne(query);
 };
 
-export const findLatestMetadata = async (project: string, branch: string) => {
+export const findLatestMetadata = async (project: string, branch: string, req: Request) => {
   const filter = { project, branch };
-  const dbSession = await db();
+  const dbSession = await getDb(req);
   const res = await dbSession.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
   if (!res || res.length !== 1) {
     return null;

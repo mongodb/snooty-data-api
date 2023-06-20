@@ -1,5 +1,5 @@
 import { Document, FindCursor, WithId } from 'mongodb';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { Readable } from 'stream';
 import { chain } from 'stream-chain';
 import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
@@ -19,14 +19,19 @@ interface DataStreamOptions {
   updatedAssetsOnly?: boolean;
 }
 
-const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, reqId?: string) => {
+const streamAssets = async (
+  pipeline: Duplex,
+  assetData: Record<string, Set<string>>,
+  reqId?: string,
+  req?: Request
+) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     pipeline.end();
     return;
   }
 
-  const assetsCursor = await findAssetsByChecksums(checksums);
+  const assetsCursor = await findAssetsByChecksums(checksums, req);
   let assetCount = 0;
   const assetStream = assetsCursor.stream({
     transform(doc: AssetDocument) {
@@ -81,7 +86,8 @@ export const streamData = async (
   res: Response,
   pagesCursor: FindCursor<PageDocType>,
   metadataDoc: WithId<Document> | null,
-  opts: DataStreamOptions = {}
+  opts: DataStreamOptions = {},
+  req?: Request
 ) => {
   const timestamp = Date.now();
   const { reqId } = opts;
@@ -143,7 +149,7 @@ export const streamData = async (
   pagesStream.once('end', async () => {
     logger.info(createMessage(`Found ${pageCount} pages`, reqId));
     try {
-      await streamAssets(pipeline, assetData, reqId);
+      await streamAssets(pipeline, assetData, reqId, req);
     } catch (err) {
       // Don't throw error since it'll just be a fatal error. Report it
       // and end the stream since response headers could already have been

@@ -4,6 +4,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
 import buildsRouter from './routes/builds';
+import prodRouter from './routes/prod';
 import projectsRouter from './routes/projects';
 import { setupClient } from './services/database';
 import { createMessage, initiateLogger } from './services/logger';
@@ -48,6 +49,7 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   app.use(reqHandler);
   app.use('/builds', buildsRouter);
   app.use('/projects', projectsRouter);
+  app.use('/prod', prodRouter);
   app.use(errorHandler);
 
   return app;
