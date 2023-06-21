@@ -43,49 +43,23 @@ interface RepoResponse {
 
 /** END typing for DB */
 
-const ATLAS_URI = process.env.ATLAS_URI ?? '';
 const REPOS_COLLECTION = 'repos_branches';
 const DB_NAME = process.env.POOL_DB_NAME ?? 'pool';
 const ENV_URL_KEY = (process.env.SNOOTY_ENV ?? 'dotcomprd') as keyof EnvKeyedObject;
 
 const logger = initiateLogger();
-let client: MongoClient;
-let dbInstance: Db | null = null;
+let db: Db;
 
-export const setupClient = async (mongoClient: MongoClient) => {
-  client = mongoClient;
-  try {
-    await client.connect();
-  } catch (e) {
-    logger.error(createMessage(`Error while connecting client: ${e}`));
-    throw e;
-  }
-  return client;
-};
-
-// exposes db instance
-export const poolDb = async () => {
-  if (dbInstance) return dbInstance;
-
-  try {
-    if (!client) {
-      client = await setupClient(new MongoClient(ATLAS_URI));
-    }
-    dbInstance = client.db(DB_NAME);
-    return dbInstance;
-  } catch (e) {
-    logger.error(createMessage(`Error while setting up pool db: ${e}`));
-    throw e;
-  }
-};
-
-export const closeDBConnection = async () => {
-  await client.close();
+// sets module's db scope
+// creates a new db instance, if it doesn't already exist
+export const initPoolDb = (client: MongoClient) => {
+  if (db) return db;
+  db = client.db(DB_NAME);
+  return db;
 };
 
 export const findAllRepos = async (options: FindOptions = {}, reqId?: string) => {
   try {
-    const db = await poolDb();
     const defaultSort: FindOptions = {
       sort: { repoName: 1 },
     };
