@@ -4,22 +4,21 @@ dotenv.config();
 import { setupApp } from './app';
 import { close } from './services/client';
 import { initiateLogger } from './services/logger';
+import { Server } from 'http';
 
 const PORT = process.env.PORT || 3000;
 const logger = initiateLogger();
+let server: Server;
 
 const startServer = async () => {
-  const app = await setupApp({});
-
-  const server = app.listen(PORT, () => {
-    logger.info(`Server listening on port: ${PORT}`);
-  });
-
-  process.on('SIGINT', async () => {
-    logger.info('SIGINT signal received');
-    await close();
-    server.close();
-  });
+  try {
+    const app = await setupApp({});
+    server = app.listen(PORT, () => {
+      logger.info(`Server listening on port: ${PORT}`);
+    });
+  } catch (e) {
+    throw e;
+  }
 };
 
 try {
@@ -28,3 +27,13 @@ try {
   logger.error(`Fatal error: ${e}`);
   process.exit(1);
 }
+
+const signalHandler = async (signal: string) => {
+  logger.info(`${signal} signal received`);
+  await close();
+  server.close();
+};
+
+process.on('SIGINT', signalHandler);
+process.on('SIGTERM', signalHandler);
+process.on('SIGQUIT', signalHandler);
