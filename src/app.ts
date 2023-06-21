@@ -42,8 +42,6 @@ const reqHandler: RequestHandler = (req, _res, next) => {
 };
 
 export const setupApp = async ({ mongoClient }: AppSettings) => {
-  // const client = await setupClient(mongoClient);
-  // setupPoolClient(client);
   const client = mongoClient ? mongoClient : await connect();
   initDb(client);
   initPoolDb(client);

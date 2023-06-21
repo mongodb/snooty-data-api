@@ -50,7 +50,7 @@ const getPageIdQuery = (projectName: string, branch: string) => {
 
 // sets module's db scope
 // creates a new db instance, if it doesn't already exist
-export const initDb = async (client: MongoClient) => {
+export const initDb = (client: MongoClient) => {
   const dbName = process.env.SNOOTY_DB_NAME ?? 'snooty_dev';
   db = client.db(dbName);
 };
