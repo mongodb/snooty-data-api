@@ -5,7 +5,9 @@ import { MongoClient, ObjectId } from 'mongodb';
 dotenv.config();
 import buildsRouter from './routes/builds';
 import projectsRouter from './routes/projects';
-import { setupClient } from './services/database';
+import { connect } from './services/client';
+import { initDb } from './services/database';
+import { initPoolDb } from './services/pool';
 import { createMessage, initiateLogger } from './services/logger';
 import { getRequestId } from './utils';
 
@@ -40,9 +42,9 @@ const reqHandler: RequestHandler = (req, _res, next) => {
 };
 
 export const setupApp = async ({ mongoClient }: AppSettings) => {
-  if (mongoClient) {
-    await setupClient(mongoClient);
-  }
+  const client = mongoClient ? mongoClient : await connect();
+  initDb(client);
+  initPoolDb(client);
 
   const app = express();
   app.use(reqHandler);

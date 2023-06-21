@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
 import { setupApp } from './app';
-import { closeDBConnection } from './services/database';
+import { close } from './services/client';
 import { initiateLogger } from './services/logger';
 
 const PORT = process.env.PORT || 3000;
@@ -17,7 +17,7 @@ const startServer = async () => {
 
   process.on('SIGINT', async () => {
     logger.info('SIGINT signal received');
-    await closeDBConnection();
+    await close();
     server.close();
   });
 };
