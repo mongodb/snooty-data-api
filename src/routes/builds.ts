@@ -20,5 +20,4 @@ export const docsPerBuildIdHandler: RequestHandler = async (req, res, next) => {
 };
 router.get('/:buildId/documents', docsPerBuildIdHandler);
 
-
 export default router;

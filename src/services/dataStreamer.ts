@@ -19,12 +19,7 @@ interface DataStreamOptions {
   updatedAssetsOnly?: boolean;
 }
 
-const streamAssets = async (
-  pipeline: Duplex,
-  assetData: Record<string, Set<string>>,
-  reqId?: string,
-  req?: Request
-) => {
+const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, req: Request, reqId?: string) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     pipeline.end();
@@ -87,7 +82,7 @@ export const streamData = async (
   pagesCursor: FindCursor<PageDocType>,
   metadataDoc: WithId<Document> | null,
   opts: DataStreamOptions = {},
-  req?: Request
+  req: Request
 ) => {
   const timestamp = Date.now();
   const { reqId } = opts;
@@ -149,7 +144,7 @@ export const streamData = async (
   pagesStream.once('end', async () => {
     logger.info(createMessage(`Found ${pageCount} pages`, reqId));
     try {
-      await streamAssets(pipeline, assetData, reqId, req);
+      await streamAssets(pipeline, assetData, req, reqId);
     } catch (err) {
       // Don't throw error since it'll just be a fatal error. Report it
       // and end the stream since response headers could already have been
