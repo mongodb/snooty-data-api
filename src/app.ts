@@ -42,9 +42,14 @@ const reqHandler: RequestHandler = (req, _res, next) => {
 };
 
 export const setupApp = async ({ mongoClient }: AppSettings) => {
-  const client = mongoClient ? mongoClient : await connect();
-  initDb(client);
-  initPoolDb(client);
+  try {
+    const client = mongoClient ? mongoClient : await connect();
+    initDb(client);
+    initPoolDb(client);
+  } catch (e) {
+    logger.error(createMessage(`Error while setting up App: ${e}`));
+    throw e;
+  }
 
   const app = express();
   app.use(reqHandler);
