@@ -1,5 +1,4 @@
 import { Db, MongoClient, ObjectId } from 'mongodb';
-import { initiateLogger } from './logger';
 import { Request } from 'express';
 
 interface StaticAsset {
@@ -37,17 +36,12 @@ interface UpdatedPageDocument {
 
 export type PageDocType = PageDocument | UpdatedPageDocument;
 
-const ATLAS_URI = process.env.ATLAS_URI || '';
 const METADATA_COLLECTION = 'metadata';
 const PAGES_COLLECTION = 'documents';
 const UPDATED_PAGES_COLLECTION = 'updated_documents';
 const ASSETS_COLLECTION = 'assets';
 
-const logger = initiateLogger();
-
-let client: MongoClient;
-let dbInstance: Db;
-let prodDbInstance: Db; // "prod" as in this environment's production. ie. qa in staging
+let db: Db;
 
 const getPageIdQuery = (projectName: string, branch: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
@@ -55,95 +49,45 @@ const getPageIdQuery = (projectName: string, branch: string) => {
   return { $regex: new RegExp(`^${pageIdPrefix}/`) };
 };
 
-// Set up MongoClient for application
-export const setupClient = async (mongoClient: MongoClient) => {
-  client = mongoClient;
-  return await client.connect();
+// sets module's db scope
+// creates a new db instance, if it doesn't already exist
+export const initDb = (client: MongoClient) => {
+  const dbName = process.env.SNOOTY_DB_NAME ?? 'snooty_dev';
+  db = client.db(dbName);
 };
 
-// Sets up the MongoClient and returns the newly created db instance, if they don't
-// already exist
-export const db = async () => {
-  if (dbInstance) {
-    return dbInstance;
-  }
-  if (!client) {
-    try {
-      await setupClient(new MongoClient(ATLAS_URI));
-    } catch (e) {
-      logger.error(e);
-      throw e;
-    }
-  }
-  const dbName = process.env.SNOOTY_DB_NAME || 'snooty_dev';
-  dbInstance = client.db(dbName);
-  return dbInstance;
-};
-
-export const prodDb = async () => {
-  if (prodDbInstance) {
-    return prodDbInstance;
-  }
-  if (!client) {
-    try {
-      await setupClient(new MongoClient(ATLAS_URI));
-    } catch (e) {
-      logger.error(e);
-      throw e;
-    }
-  }
-  const dbName = process.env.SNOOTY_PROD_DB_NAME || 'snooty_dev';
-  prodDbInstance = client.db(dbName);
-  return prodDbInstance;
-};
-
-const getDb = async (req?: Request) => (req?.originalUrl.includes('/prod/') ? prodDb() : db());
-
-export const closeDBConnection = async () => {
-  if (client) {
-    await client.close();
-    logger.info('MongoDB Client closed successfully');
-  }
-};
-
-export const findAssetsByChecksums = async (checksums: string[], req?: Request) => {
-  const dbSession = await getDb(req);
-  return dbSession.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
+export const findAssetsByChecksums = async (checksums: string[]) => {
+  return db.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
 };
 
 export const findPagesByBuildId = async (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  const dbSession = await getDb(req);
-  return dbSession.collection<PageDocument>(PAGES_COLLECTION).find(query);
+  return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
 export const findPagesByProject = async (project: string, branch: string, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
-  const dbSession = await getDb(req);
-  return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
 export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
-  const dbSession = await getDb(req);
-  return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
 export const findOneMetadataByBuildId = async (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  const dbSession = await getDb(req);
-  return dbSession.collection(METADATA_COLLECTION).findOne(query);
+  return db.collection(METADATA_COLLECTION).findOne(query);
 };
 
 export const findLatestMetadata = async (project: string, branch: string, req: Request) => {
   const filter = { project, branch };
-  const dbSession = await getDb(req);
-  const res = await dbSession.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
+  const res = await db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
   if (!res || res.length !== 1) {
     return null;
   }
