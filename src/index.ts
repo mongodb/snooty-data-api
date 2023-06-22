@@ -11,14 +11,10 @@ const logger = initiateLogger();
 let server: Server;
 
 const startServer = async () => {
-  try {
-    const app = await setupApp({});
-    server = app.listen(PORT, () => {
-      logger.info(`Server listening on port: ${PORT}`);
-    });
-  } catch (e) {
-    throw e;
-  }
+  const app = await setupApp({});
+  server = app.listen(PORT, () => {
+    logger.info(`Server listening on port: ${PORT}`);
+  });
 };
 
 startServer().catch((e) => {
