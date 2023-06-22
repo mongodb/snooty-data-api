@@ -21,12 +21,10 @@ const startServer = async () => {
   }
 };
 
-try {
-  startServer();
-} catch (e) {
+startServer().catch((e) => {
   logger.error(`Fatal error: ${e}`);
   process.exit(1);
-}
+});
 
 const signalHandler = async (signal: string) => {
   logger.info(`${signal} signal received`);
