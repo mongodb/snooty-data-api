@@ -1,10 +1,10 @@
 import dotenv from 'dotenv';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
+import { Server } from 'http';
 import { setupApp } from './app';
 import { close } from './services/client';
 import { initiateLogger } from './services/logger';
-import { Server } from 'http';
 
 const PORT = process.env.PORT || 3000;
 const logger = initiateLogger();
