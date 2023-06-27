@@ -95,8 +95,8 @@ export const findMetadataByBuildId = (buildId: string | ObjectId) => {
 
 /**
  * Returns all metadata documents for a given project
- * @param project 
- * @returns 
+ * @param project
+ * @returns
  */
 export const findLatestMetadataByProj = (project: string) => {
   const aggregationStages = [
@@ -104,11 +104,11 @@ export const findLatestMetadataByProj = (project: string) => {
     { $match: { project: project } },
     // Sort them so that most recent documents are first
     { $sort: { created_at: -1 } },
-    // Group documents by their branch, and only embed the first doc seen 
+    // Group documents by their branch, and only embed the first doc seen
     // (or most recent, based on sorting stage)
     { $group: { _id: '$branch', doc: { $first: '$$ROOT' } } },
     // Un-embed the doc from each group
-    { $replaceRoot: { newRoot: '$doc' } }
+    { $replaceRoot: { newRoot: '$doc' } },
   ];
   return db.collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };

@@ -1,5 +1,11 @@
 import express from 'express';
-import { findLatestMetadataByProjAndBranch, findPagesByProjAndBranch, findUpdatedPagesByProjAndBranch, findPagesByProj, findLatestMetadataByProj } from '../services/database';
+import {
+  findLatestMetadataByProjAndBranch,
+  findPagesByProjAndBranch,
+  findUpdatedPagesByProjAndBranch,
+  findPagesByProj,
+  findLatestMetadataByProj,
+} from '../services/database';
 import { streamData } from '../services/dataStreamer';
 import { findAllRepos } from '../services/pool';
 import { getRequestId } from '../utils';
