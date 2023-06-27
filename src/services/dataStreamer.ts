@@ -1,4 +1,4 @@
-import { Document, FindCursor, WithId } from 'mongodb';
+import { AbstractCursor, Document, FindCursor, WithId } from 'mongodb';
 import { Response } from 'express';
 import { Readable } from 'stream';
 import { chain } from 'stream-chain';

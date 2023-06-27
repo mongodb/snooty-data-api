@@ -42,9 +42,12 @@ const ASSETS_COLLECTION = 'assets';
 
 let db: Db;
 
-const getPageIdQuery = (projectName: string, branch: string) => {
+const getPageIdQuery = (projectName: string, branch?: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
-  const pageIdPrefix = `${projectName}/${user}/${branch}`;
+  let pageIdPrefix = `${projectName}/${user}`;
+  if (branch) {
+    pageIdPrefix += `/${branch}`;
+  }
   return { $regex: new RegExp(`^${pageIdPrefix}/`) };
 };
 
@@ -65,13 +68,19 @@ export const findPagesByBuildId = async (buildId: string | ObjectId) => {
   return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProject = async (project: string, branch: string) => {
+export const findPagesByProj = async (project: string) => {
+  const pageIdQuery = getPageIdQuery(project);
+  const query = { page_id: pageIdQuery };
+  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+};
+
+export const findPagesByProjAndBranch = async (project: string, branch: string) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
   return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number) => {
+export const findUpdatedPagesByProjAndBranch = async (project: string, branch: string, timestamp: number) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
@@ -84,7 +93,27 @@ export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
   return db.collection(METADATA_COLLECTION).findOne(query);
 };
 
-export const findLatestMetadata = async (project: string, branch: string) => {
+/**
+ * Returns all metadata documents for a given project
+ * @param project 
+ * @returns 
+ */
+export const findLatestMetadataByProj = (project: string) => {
+  const aggregationStages = [
+    // Look for all metadata documents of the same project
+    { $match: { project: project } },
+    // Sort them so that most recent documents are first
+    { $sort: { created_at: -1 } },
+    // Group documents by their branch, and only embed the first doc seen 
+    // (or most recent, based on sorting stage)
+    { $group: { _id: '$branch', doc: { $first: '$$ROOT' } } },
+    // Un-embed the doc from each group
+    { $replaceRoot: { newRoot: '$doc' } }
+  ];
+  return db.collection(METADATA_COLLECTION).aggregate(aggregationStages);
+};
+
+export const findLatestMetadataByProjAndBranch = async (project: string, branch: string) => {
   const filter = { project, branch };
   const res = await db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
   if (!res || res.length !== 1) {
