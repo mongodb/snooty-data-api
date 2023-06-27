@@ -58,39 +58,39 @@ export const initDb = (client: MongoClient) => {
   db = client.db(dbName);
 };
 
-export const findAssetsByChecksums = async (checksums: string[]) => {
+export const findAssetsByChecksums = (checksums: string[]) => {
   return db.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
 };
 
-export const findPagesByBuildId = async (buildId: string | ObjectId) => {
+export const findPagesByBuildId = (buildId: string | ObjectId) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
   return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProj = async (project: string) => {
+export const findPagesByProj = (project: string) => {
   const pageIdQuery = getPageIdQuery(project);
   const query = { page_id: pageIdQuery };
   return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProjAndBranch = async (project: string, branch: string) => {
+export const findPagesByProjAndBranch = (project: string, branch: string) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
   return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProjAndBranch = async (project: string, branch: string, timestamp: number) => {
+export const findUpdatedPagesByProjAndBranch = (project: string, branch: string, timestamp: number) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
   return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
+export const findMetadataByBuildId = (buildId: string | ObjectId) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  return db.collection(METADATA_COLLECTION).findOne(query);
+  return db.collection(METADATA_COLLECTION).find(query);
 };
 
 /**
@@ -113,11 +113,7 @@ export const findLatestMetadataByProj = (project: string) => {
   return db.collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };
 
-export const findLatestMetadataByProjAndBranch = async (project: string, branch: string) => {
+export const findLatestMetadataByProjAndBranch = (project: string, branch: string) => {
   const filter = { project, branch };
-  const res = await db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
-  if (!res || res.length !== 1) {
-    return null;
-  }
-  return res[0];
+  return db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1);
 };

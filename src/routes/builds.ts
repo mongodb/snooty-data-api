@@ -1,5 +1,5 @@
 import express from 'express';
-import { findOneMetadataByBuildId, findPagesByBuildId } from '../services/database';
+import { findMetadataByBuildId, findPagesByBuildId } from '../services/database';
 import { streamData } from '../services/dataStreamer';
 import { getRequestId } from '../utils';
 
@@ -11,9 +11,9 @@ router.get('/:buildId/documents', async (req, res, next) => {
   const { buildId } = req.params;
   const reqId = getRequestId(req);
   try {
-    const pagesCursor = await findPagesByBuildId(buildId);
-    const metadataDoc = await findOneMetadataByBuildId(buildId);
-    await streamData(res, pagesCursor, metadataDoc, { reqId });
+    const pagesCursor = findPagesByBuildId(buildId);
+    const metadataCursor = findMetadataByBuildId(buildId);
+    await streamData(res, pagesCursor, metadataCursor, { reqId });
   } catch (err) {
     next(err);
   }

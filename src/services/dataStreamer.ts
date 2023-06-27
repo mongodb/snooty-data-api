@@ -55,6 +55,51 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
   });
 };
 
+const streamPages = async (pipeline: Duplex, pagesCursor: FindCursor<PageDocType>, opts: DataStreamOptions = {}) => {
+  const assetData: Record<string, Set<string>> = {};
+  let pageCount = 0;
+  const { updatedAssetsOnly, reqTimestamp, reqId } = opts;
+  const pagesStream = pagesCursor.stream({
+    transform(doc: PageDocType) {
+      // Grab static assets for each page. 1 static asset can be used on more than
+      // 1 page. Due to legacy considerations, 1 image can also be referred by more
+      // than 1 filename. This is suboptimal and should be changed in the future
+      doc.static_assets.forEach(({ checksum, key: filename, updated_at: updatedAt }) => {
+        // Skip to next asset if the asset has not been updated
+        if (updatedAssetsOnly && !isUpdated(reqTimestamp, updatedAt)) {
+          return;
+        }
+        if (!assetData[checksum]) {
+          assetData[checksum] = new Set();
+        }
+        assetData[checksum].add(filename);
+      });
+      const newDoc: StreamData = {
+        type: 'page',
+        data: doc,
+      };
+      pageCount++;
+      return newDoc;
+    },
+  });
+
+  pagesStream.pipe(pipeline, { end: false });
+  pagesStream.once('end', async () => {
+    logger.info(createMessage(`Found ${pageCount} pages`, reqId));
+    try {
+      await streamAssets(pipeline, assetData, reqId);
+    } catch (err) {
+      logger.error(createMessage(`Error trying to stream assets: ${err}`));
+      pipeline.end();
+      pipeline.destroy();
+    }
+  });
+  pagesStream.once('error', (err) => {
+    logger.error(createMessage(`There was an error streaming pages: ${err}`, reqId));
+    pagesStream.destroy();
+  });
+};
+
 /**
  * Given an update time, returns `true` if the update took place after the request time.
  *
@@ -80,7 +125,7 @@ const isUpdated = (previousTime?: number, newTime?: Date) => {
 export const streamData = async (
   res: Response,
   pagesCursor: FindCursor<PageDocType>,
-  metadataDoc: WithId<Document> | null,
+  metadataCursor: AbstractCursor<Document>,
   opts: DataStreamOptions = {}
 ) => {
   const timestamp = Date.now();
@@ -92,69 +137,45 @@ export const streamData = async (
     res.destroy();
   });
 
+  // Used as a chain of streams for output
   const pipeline = chain([stringer(), res]);
-  const readable = new Readable({ objectMode: true });
+
   // Return timestamp to inform Gatsby Cloud when data was last queried
   const timestampChunk: StreamData = { type: 'timestamp', data: timestamp };
-  readable.push(timestampChunk);
   logger.info(createMessage(`Returning timestamp: ${timestamp}`, reqId));
+  pipeline.write(timestampChunk);
 
-  if (metadataDoc) {
-    const metadataChunk: StreamData = { type: 'metadata', data: metadataDoc };
-    readable.push(metadataChunk);
-  }
-  const metadataCount = metadataDoc ? 1 : 0;
-  logger.info(createMessage(`Found ${metadataCount} metadata document`, reqId));
-
-  readable.push(null);
-  // Keep pipeline open for other data. Last stream should be in charge of ending
-  readable.pipe(pipeline, { end: false });
-
-  const assetData: Record<string, Set<string>> = {};
-  let pageCount = 0;
-  const { updatedAssetsOnly, reqTimestamp } = opts;
-  const pagesStream = pagesCursor.stream({
-    transform(doc: PageDocType) {
-      // Grab static assets for each page. 1 static asset can be used on more than
-      // 1 page. Due to legacy considerations, 1 image can also be referred by more
-      // than 1 filename. This is suboptimal and should be changed in the future
-      doc.static_assets.forEach(({ checksum, key: filename, updated_at: updatedAt }) => {
-        // Skip to next asset if the asset has not been updated
-        if (updatedAssetsOnly && !isUpdated(reqTimestamp, updatedAt)) {
-          return;
-        }
-        if (!assetData[checksum]) {
-          assetData[checksum] = new Set();
-        }
-        assetData[checksum].add(filename);
-      });
+  let metadataCount = 0;
+  const metadataStream = metadataCursor.stream({
+    transform(doc) {
       const newDoc: StreamData = {
-        type: 'page',
+        type: 'metadata',
         data: doc,
       };
-      pageCount++;
+      metadataCount++;
       return newDoc;
-    },
+    }
   });
 
   // We use pipe() instead of promisified pipeline() here due to weird behavior with
-  // having 3 or more streams in the same pipeline and setting `end` to false.
-  pagesStream.pipe(pipeline, { end: false });
-  pagesStream.once('end', async () => {
-    logger.info(createMessage(`Found ${pageCount} pages`, reqId));
+  // having multiple streams in the same pipeline and setting `end` to false.
+  metadataStream.pipe(pipeline, { end: false });
+  // Chaining sequential streams like this is not ideal
+  metadataStream.once('end', async () => {
+    logger.info(createMessage(`Found ${metadataCount} metadata documents`, reqId));
     try {
-      await streamAssets(pipeline, assetData, reqId);
+      await streamPages(pipeline, pagesCursor, opts);
     } catch (err) {
       // Don't throw error since it'll just be a fatal error. Report it
       // and end the stream since response headers could already have been
       // sent by then.
-      logger.error(createMessage(`Error trying to stream assets: ${err}`));
-      res.end();
-      res.destroy();
+      logger.error(createMessage(`Error trying to stream pages: ${err}`));
+      pipeline.end();
+      pipeline.destroy();
     }
   });
-  pagesStream.once('error', (err) => {
-    logger.error(createMessage(`There was an error streaming pages: ${err}`, reqId));
-    pagesStream.destroy();
+  metadataStream.once('error', (err) => {
+    logger.error(createMessage(`There was an error streaming metadata: ${err}`, reqId));
+    metadataStream.destroy();
   });
 };

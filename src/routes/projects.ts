@@ -1,5 +1,5 @@
 import express from 'express';
-import { findLatestMetadataByProjAndBranch, findPagesByProjAndBranch, findUpdatedPagesByProjAndBranch, findPagesByProj } from '../services/database';
+import { findLatestMetadataByProjAndBranch, findPagesByProjAndBranch, findUpdatedPagesByProjAndBranch, findPagesByProj, findLatestMetadataByProj } from '../services/database';
 import { streamData } from '../services/dataStreamer';
 import { findAllRepos } from '../services/pool';
 import { getRequestId } from '../utils';
@@ -22,9 +22,9 @@ router.get('/:snootyProject/documents', async (req, res, next) => {
   const { snootyProject } = req.params;
   const reqId = getRequestId(req);
   try {
-    // const metadataCursor = findLatestMetadataByProj(snootyProject);
-    const pagesCursor = await findPagesByProj(snootyProject);
-    await streamData(res, pagesCursor, null, { reqId });
+    const metadataCursor = findLatestMetadataByProj(snootyProject);
+    const pagesCursor = findPagesByProj(snootyProject);
+    await streamData(res, pagesCursor, metadataCursor, { reqId });
   } catch (err) {
     next(err);
   }
@@ -37,9 +37,9 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   const { snootyProject, branch } = req.params;
   const reqId = getRequestId(req);
   try {
-    const metadataDoc = await findLatestMetadataByProjAndBranch(snootyProject, branch);
-    const pagesCursor = await findPagesByProjAndBranch(snootyProject, branch);
-    await streamData(res, pagesCursor, metadataDoc, { reqId });
+    const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch);
+    const pagesCursor = findPagesByProjAndBranch(snootyProject, branch);
+    await streamData(res, pagesCursor, metadataCursor, { reqId });
   } catch (err) {
     next(err);
   }
@@ -50,9 +50,9 @@ router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, r
   const timestampNum = parseInt(timestamp);
   const reqId = getRequestId(req);
   try {
-    const metadataDoc = await findLatestMetadataByProjAndBranch(snootyProject, branch);
-    const pagesCursor = await findUpdatedPagesByProjAndBranch(snootyProject, branch, timestampNum);
-    await streamData(res, pagesCursor, metadataDoc, { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true });
+    const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch);
+    const pagesCursor = findUpdatedPagesByProjAndBranch(snootyProject, branch, timestampNum);
+    await streamData(res, pagesCursor, metadataCursor, { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true });
   } catch (err) {
     next(err);
   }
