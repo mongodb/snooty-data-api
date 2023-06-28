@@ -6,6 +6,7 @@ name: test
 trigger:
   branch:
   - main
+  - pre-test-errors
   event:
   - push
   - tag
