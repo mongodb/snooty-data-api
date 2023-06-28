@@ -13,6 +13,7 @@ trigger:
 
 steps:
 - name: test
+  # Pinning to 18-bullseye as a workaround. See: https://github.com/nodejs/docker-node/issues/1916
   image: node:18-bullseye
   commands:
   - npm ci
