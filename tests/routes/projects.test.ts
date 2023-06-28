@@ -29,7 +29,7 @@ describe('Test projects routes', () => {
     expect(projects.filter((p: any) => p?.repoName?.includes('internal'))).toHaveLength(0);
   });
 
-  it('should return all data based on project ID', async () => {
+  it('should return all data based on project and branch', async () => {
     const res = await request(app).get('/projects/docs/master/documents');
     expect(res.status).toBe(200);
     const data = res.text.split('\n');
@@ -57,6 +57,13 @@ describe('Test projects routes', () => {
     const prevBuildTime = sampleMetadata[0].created_at;
     const timestamp = new Date(prevBuildTime).getTime();
     const res = await request(app).get(`/projects/docs/master/documents/updated/${timestamp}`);
+    expect(res.status).toBe(200);
+    const data = res.text.split('\n');
+    expect(data).toMatchSnapshot();
+  });
+
+  it('should return all metadata and pages for all branches for 1 project', async () => {
+    const res = await request(app).get('/projects/docs/documents');
     expect(res.status).toBe(200);
     const data = res.text.split('\n');
     expect(data).toMatchSnapshot();
