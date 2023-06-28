@@ -2,6 +2,7 @@ import { MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
 import { sampleMetadata } from '../sampleData/metadata';
+import { sampleReposBranches } from '../sampleData/reposBranches';
 
 const timestamp = 1685714694420;
 
@@ -17,6 +18,15 @@ describe('Test projects routes', () => {
 
   afterAll(async () => {
     await client.close();
+  });
+
+  it('should return all external projects from the base route', async () => {
+    const res = await request(app).get('/projects');
+    expect(res.status).toBe(200);
+    const projects = JSON.parse(res.text)['data'];
+    expect(projects.length).toBeLessThanOrEqual(sampleReposBranches.length);
+    expect(projects.find((p: any) => p?.repoName === 'cloud-docs')).toBeTruthy();
+    expect(projects.filter((p: any) => p?.repoName?.includes('internal'))).toHaveLength(0);
   });
 
   it('should return all data based on project ID', async () => {

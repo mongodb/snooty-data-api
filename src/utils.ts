@@ -17,3 +17,10 @@ export const getRequestId = (req: Request) => {
     return reqId;
   }
 };
+
+export const assertTrailingSlash = (str: string) => {
+  if (str && str.match(/\/$/)) {
+    return str;
+  }
+  return `${str}/`;
+};

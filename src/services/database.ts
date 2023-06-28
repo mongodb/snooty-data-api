@@ -1,5 +1,4 @@
 import { Db, MongoClient, ObjectId } from 'mongodb';
-import { initiateLogger } from './logger';
 
 interface StaticAsset {
   checksum: string;
@@ -36,16 +35,12 @@ interface UpdatedPageDocument {
 
 export type PageDocType = PageDocument | UpdatedPageDocument;
 
-const ATLAS_URI = process.env.ATLAS_URI || '';
 const METADATA_COLLECTION = 'metadata';
 const PAGES_COLLECTION = 'documents';
 const UPDATED_PAGES_COLLECTION = 'updated_documents';
 const ASSETS_COLLECTION = 'assets';
 
-const logger = initiateLogger();
-
-let client: MongoClient;
-let dbInstance: Db;
+let db: Db;
 
 const getPageIdQuery = (projectName: string, branch: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
@@ -53,73 +48,45 @@ const getPageIdQuery = (projectName: string, branch: string) => {
   return { $regex: new RegExp(`^${pageIdPrefix}/`) };
 };
 
-// Set up MongoClient for application
-export const setupClient = async (mongoClient: MongoClient) => {
-  client = mongoClient;
-  await client.connect();
-  const dbName = process.env.SNOOTY_DB_NAME || 'snooty_dev';
-  dbInstance = client.db(dbName);
-};
-
-// Sets up the MongoClient and returns the newly created db instance, if they don't
-// already exist
-export const db = async () => {
-  if (!dbInstance) {
-    try {
-      await setupClient(new MongoClient(ATLAS_URI));
-    } catch (e) {
-      logger.error(e);
-      throw e;
-    }
-  }
-  return dbInstance;
-};
-
-export const closeDBConnection = async () => {
-  if (client) {
-    await client.close();
-    logger.info('MongoDB Client closed successfully');
-  }
+// sets module's db scope
+// creates a new db instance, if it doesn't already exist
+export const initDb = (client: MongoClient) => {
+  const dbName = process.env.SNOOTY_DB_NAME ?? 'snooty_dev';
+  db = client.db(dbName);
 };
 
 export const findAssetsByChecksums = async (checksums: string[]) => {
-  const dbSession = await db();
-  return dbSession.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
+  return db.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
 };
 
 export const findPagesByBuildId = async (buildId: string | ObjectId) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  const dbSession = await db();
-  return dbSession.collection<PageDocument>(PAGES_COLLECTION).find(query);
+  return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
 export const findPagesByProject = async (project: string, branch: string) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
-  const dbSession = await db();
-  return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
 export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
-  const dbSession = await db();
-  return dbSession.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
 export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  const dbSession = await db();
-  return dbSession.collection(METADATA_COLLECTION).findOne(query);
+  return db.collection(METADATA_COLLECTION).findOne(query);
 };
 
 export const findLatestMetadata = async (project: string, branch: string) => {
   const filter = { project, branch };
-  const dbSession = await db();
-  const res = await dbSession.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
+  const res = await db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
   if (!res || res.length !== 1) {
     return null;
   }
