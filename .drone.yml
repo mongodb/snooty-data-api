@@ -6,6 +6,7 @@ name: test
 trigger:
   branch:
   - main
+  - pre-test-errors
   event:
   - push
   - tag
@@ -13,7 +14,7 @@ trigger:
 steps:
 - name: test
   # Pinning to 18-bullseye as a workaround. See: https://github.com/nodejs/docker-node/issues/1916
-  image: node:18-bullseye
+  image: node:18-alpine
   commands:
   - npm ci
   - npm run lint
