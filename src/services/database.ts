@@ -120,6 +120,8 @@ export const findLatestMetadataByProj = (project: string, timestamp?: number) =>
     { $group: { _id: '$branch', doc: { $first: '$$ROOT' } } },
     // Un-embed the doc from each group
     { $replaceRoot: { newRoot: '$doc' } },
+    // Arbitrarily sort results to help avoid flaky tests
+    { $sort: { created_at: -1 } },
   ];
   return db.collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };
