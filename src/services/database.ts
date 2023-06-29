@@ -101,8 +101,8 @@ export const findMetadataByBuildId = (buildId: string | ObjectId) => {
 /**
  * Returns all metadata documents for a given project
  * @param project
- * @param lastQuery 
- * @returns 
+ * @param lastQuery
+ * @returns
  */
 export const findLatestMetadataByProj = (project: string, timestamp?: number) => {
   const matchFilter: Filter<Document> = { project: project };

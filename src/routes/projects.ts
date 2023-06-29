@@ -23,10 +23,6 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-interface RequestQuery {
-  updated: string;
-}
-
 // Returns all build data needed for all branches for a single project
 router.get('/:snootyProject/documents', async (req, res, next) => {
   const { snootyProject } = req.params;
@@ -35,7 +31,7 @@ router.get('/:snootyProject/documents', async (req, res, next) => {
   let parsedUpdatedVal;
   if (updated && typeof updated === 'string') {
     parsedUpdatedVal = parseInt(updated);
-    console.log({parsedUpdatedVal});
+    console.log({ parsedUpdatedVal });
   }
 
   const reqId = getRequestId(req);
