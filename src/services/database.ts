@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId } from 'mongodb';
+import { Db, Filter, MongoClient, ObjectId } from 'mongodb';
 
 interface StaticAsset {
   checksum: string;
@@ -68,9 +68,14 @@ export const findPagesByBuildId = (buildId: string | ObjectId) => {
   return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProj = (project: string) => {
+export const findPagesByProj = (project: string, timestamp?: number) => {
   const pageIdQuery = getPageIdQuery(project);
-  const query = { page_id: pageIdQuery };
+  const query: Filter<UpdatedPageDocument> = { page_id: pageIdQuery };
+  if (timestamp) {
+    const lastQuery = new Date(timestamp);
+    query['updated_at'] = { $gt: lastQuery };
+  }
+  console.log(query);
   return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
@@ -96,12 +101,18 @@ export const findMetadataByBuildId = (buildId: string | ObjectId) => {
 /**
  * Returns all metadata documents for a given project
  * @param project
- * @returns
+ * @param lastQuery 
+ * @returns 
  */
-export const findLatestMetadataByProj = (project: string) => {
+export const findLatestMetadataByProj = (project: string, timestamp?: number) => {
+  const matchFilter: Filter<Document> = { project: project };
+  if (timestamp) {
+    const lastQuery = new Date(timestamp);
+    matchFilter['created_at'] = { $gt: lastQuery };
+  }
   const aggregationStages = [
     // Look for all metadata documents of the same project
-    { $match: { project: project } },
+    { $match: matchFilter },
     // Sort them so that most recent documents are first
     { $sort: { created_at: -1 } },
     // Group documents by their branch, and only embed the first doc seen

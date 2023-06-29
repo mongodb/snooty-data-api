@@ -62,10 +62,21 @@ describe('Test projects routes', () => {
     expect(data).toMatchSnapshot();
   });
 
-  it('should return all metadata and pages for all branches for 1 project', async () => {
-    const res = await request(app).get('/projects/docs/documents');
-    expect(res.status).toBe(200);
-    const data = res.text.split('\n');
-    expect(data).toMatchSnapshot();
+  describe('/:snootyProject/documents', () => {
+    it('should return all metadata and pages for all branches for 1 project', async () => {
+      const res = await request(app).get('/projects/docs/documents');
+      expect(res.status).toBe(200);
+      const data = res.text.split('\n');
+      expect(data).toMatchSnapshot();
+    });
+
+    it('should return all data after updated query param', async () => {
+      const prevBuildTime = sampleMetadata[0].created_at;
+      const timestamp = new Date(prevBuildTime).getTime();
+      const res = await request(app).get(`/projects/docs/documents?updated=${timestamp}`);
+      expect(res.status).toBe(200);
+      const data = res.text.split('\n');
+      expect(data).toMatchSnapshot();
+    });
   });
 });
