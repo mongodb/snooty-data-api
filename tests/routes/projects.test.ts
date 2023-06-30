@@ -1,7 +1,6 @@
 import { MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
-import { sampleMetadata } from '../sampleData/metadata';
 import { sampleReposBranches } from '../sampleData/reposBranches';
 
 const timestamp = 1685714694420;
