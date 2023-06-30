@@ -36,9 +36,9 @@ router.get('/:snootyProject/documents', async (req, res, next) => {
 
   const reqId = getRequestId(req);
   try {
-    const metadataCursor = findLatestMetadataByProj(snootyProject, parsedUpdatedVal);
-    const pagesCursor = findPagesByProj(snootyProject, parsedUpdatedVal);
-    await streamData(res, pagesCursor, metadataCursor, { reqId });
+    const metadataCursor = findLatestMetadataByProj(snootyProject, req, parsedUpdatedVal);
+    const pagesCursor = findPagesByProj(snootyProject, req, parsedUpdatedVal);
+    await streamData(res, pagesCursor, metadataCursor, { reqId }, req);
   } catch (err) {
     next(err);
   }
@@ -51,9 +51,9 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   const { snootyProject, branch } = req.params;
   const reqId = getRequestId(req);
   try {
-    const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch);
-    const pagesCursor = findPagesByProjAndBranch(snootyProject, branch);
-    await streamData(res, pagesCursor, metadataCursor, { reqId });
+    const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch, req);
+    const pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req);
+    await streamData(res, pagesCursor, metadataCursor, { reqId }, req);
   } catch (err) {
     next(err);
   }
@@ -64,9 +64,15 @@ router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, r
   const timestampNum = parseInt(timestamp);
   const reqId = getRequestId(req);
   try {
-    const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch);
-    const pagesCursor = findUpdatedPagesByProjAndBranch(snootyProject, branch, timestampNum);
-    await streamData(res, pagesCursor, metadataCursor, { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true });
+    const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch, req);
+    const pagesCursor = findUpdatedPagesByProjAndBranch(snootyProject, branch, timestampNum, req);
+    await streamData(
+      res,
+      pagesCursor,
+      metadataCursor,
+      { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true },
+      req
+    );
   } catch (err) {
     next(err);
   }

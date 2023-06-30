@@ -1,4 +1,5 @@
 import { Db, Filter, MongoClient, ObjectId } from 'mongodb';
+import { Request } from 'express';
 
 interface StaticAsset {
   checksum: string;
@@ -39,8 +40,9 @@ const METADATA_COLLECTION = 'metadata';
 const PAGES_COLLECTION = 'documents';
 const UPDATED_PAGES_COLLECTION = 'updated_documents';
 const ASSETS_COLLECTION = 'assets';
+const PROD_PATH = '/prod/';
 
-let db: Db;
+let db: Db, prodDb: Db;
 
 const getPageIdQuery = (projectName: string, branch?: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
@@ -56,19 +58,25 @@ const getPageIdQuery = (projectName: string, branch?: string) => {
 export const initDb = (client: MongoClient) => {
   const dbName = process.env.SNOOTY_DB_NAME ?? 'snooty_dev';
   db = client.db(dbName);
+  const prodDbName = process.env.SNOOTY_PROD_DB_NAME ?? 'snooty_dev'; // prodDbName represents production deployments (vs staging)
+  prodDb = client.db(prodDbName);
 };
 
-export const findAssetsByChecksums = (checksums: string[]) => {
-  return db.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
+const getDb = (request: Request) => (request.baseUrl.startsWith(PROD_PATH) ? prodDb : db);
+
+export const findAssetsByChecksums = (checksums: string[], req: Request) => {
+  return getDb(req)
+    .collection<AssetDocument>(ASSETS_COLLECTION)
+    .find({ _id: { $in: checksums } });
 };
 
-export const findPagesByBuildId = (buildId: string | ObjectId) => {
+export const findPagesByBuildId = (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
+  return getDb(req).collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProj = (project: string, timestamp?: number) => {
+export const findPagesByProj = (project: string, req: Request, timestamp?: number) => {
   const pageIdQuery = getPageIdQuery(project);
   const query: Filter<UpdatedPageDocument> = { page_id: pageIdQuery };
   if (timestamp) {
@@ -76,26 +84,26 @@ export const findPagesByProj = (project: string, timestamp?: number) => {
     query['updated_at'] = { $gt: lastQuery };
   }
   console.log(query);
-  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProjAndBranch = (project: string, branch: string) => {
+export const findPagesByProjAndBranch = (project: string, branch: string, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
-  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProjAndBranch = (project: string, branch: string, timestamp: number) => {
+export const findUpdatedPagesByProjAndBranch = (project: string, branch: string, timestamp: number, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
-  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findMetadataByBuildId = (buildId: string | ObjectId) => {
+export const findMetadataByBuildId = (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  return db.collection(METADATA_COLLECTION).find(query);
+  return getDb(req).collection(METADATA_COLLECTION).find(query);
 };
 
 /**
@@ -104,12 +112,14 @@ export const findMetadataByBuildId = (buildId: string | ObjectId) => {
  * @param lastQuery
  * @returns
  */
-export const findLatestMetadataByProj = (project: string, timestamp?: number) => {
+export const findLatestMetadataByProj = (project: string, req: Request, timestamp?: number) => {
   const matchFilter: Filter<Document> = { project: project };
+
   if (timestamp) {
     const lastQuery = new Date(timestamp);
     matchFilter['created_at'] = { $gt: lastQuery };
   }
+
   const aggregationStages = [
     // Look for all metadata documents of the same project
     { $match: matchFilter },
@@ -123,10 +133,10 @@ export const findLatestMetadataByProj = (project: string, timestamp?: number) =>
     // Arbitrarily sort results to help avoid flaky tests
     { $sort: { created_at: -1 } },
   ];
-  return db.collection(METADATA_COLLECTION).aggregate(aggregationStages);
+  return getDb(req).collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };
 
-export const findLatestMetadataByProjAndBranch = (project: string, branch: string) => {
+export const findLatestMetadataByProjAndBranch = (project: string, branch: string, req: Request) => {
   const filter = { project, branch };
-  return db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1);
+  return getDb(req).collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1);
 };
