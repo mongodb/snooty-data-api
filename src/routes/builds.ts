@@ -1,4 +1,4 @@
-import express, { RequestHandler } from 'express';
+import express from 'express';
 import { findOneMetadataByBuildId, findPagesByBuildId } from '../services/database';
 import { streamData } from '../services/dataStreamer';
 import { getRequestId } from '../utils';
@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Given a buildId corresponding to a persistence module build/upload, return all
 // documents (page ASTs, metadata, assets) associated for that build
-export const docsPerBuildIdHandler: RequestHandler = async (req, res, next) => {
+router.get('/:buildId/documents', async (req, res, next) => {
   const { buildId } = req.params;
   const reqId = getRequestId(req);
   try {
@@ -17,7 +17,6 @@ export const docsPerBuildIdHandler: RequestHandler = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-router.get('/:buildId/documents', docsPerBuildIdHandler);
+});
 
 export default router;
