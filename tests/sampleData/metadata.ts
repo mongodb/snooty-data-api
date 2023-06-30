@@ -53,4 +53,17 @@ export const sampleMetadata = [
     build_id: new ObjectId('642ec854c38bedd45ed31235'),
     created_at: new Date('2023-04-06T13:25:40.000Z'),
   },
+  {
+    _id: new ObjectId('646bae50c41d7b9a472b6080'),
+    project: 'docs',
+    branch: 'not-master',
+    title: 'MongoDB Manual',
+    eol: false,
+    slugToTitle: {},
+    toctreeorder: {},
+    parentPaths: {},
+    static_files: {},
+    build_id: new ObjectId('642ec854c38bedd45ed31236'),
+    created_at: new Date('2023-04-06T13:25:40.000Z'),
+  },
 ];

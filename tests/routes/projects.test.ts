@@ -1,7 +1,6 @@
 import { MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
-import { sampleMetadata } from '../sampleData/metadata';
 import { sampleReposBranches } from '../sampleData/reposBranches';
 
 const timestamp = 1685714694420;
@@ -29,7 +28,7 @@ describe('Test projects routes', () => {
     expect(projects.filter((p: any) => p?.repoName?.includes('internal'))).toHaveLength(0);
   });
 
-  it('should return all data based on project ID', async () => {
+  it('should return all data based on project and branch', async () => {
     const res = await request(app).get('/projects/docs/master/documents');
     expect(res.status).toBe(200);
     const data = res.text.split('\n');
@@ -54,11 +53,29 @@ describe('Test projects routes', () => {
   });
 
   it('should return documents updated after given timestamp', async () => {
-    const prevBuildTime = sampleMetadata[0].created_at;
-    const timestamp = new Date(prevBuildTime).getTime();
+    // timestamp is set to 1 minute after first document, to simulate the last time the document was queried
+    const timestamp = new Date('2023-04-06T13:26:40.000Z').getTime();
     const res = await request(app).get(`/projects/docs/master/documents/updated/${timestamp}`);
     expect(res.status).toBe(200);
     const data = res.text.split('\n');
     expect(data).toMatchSnapshot();
+  });
+
+  describe('/:snootyProject/documents', () => {
+    it('should return all metadata and pages for all branches for 1 project', async () => {
+      const res = await request(app).get('/projects/docs/documents');
+      expect(res.status).toBe(200);
+      const data = res.text.split('\n');
+      expect(data).toMatchSnapshot();
+    });
+
+    it('should return all data after updated query param', async () => {
+      const prevBuildTime = new Date('2023-04-06T13:26:40.000Z').getTime();
+      const timestamp = new Date(prevBuildTime).getTime();
+      const res = await request(app).get(`/projects/docs/documents?updated=${timestamp}`);
+      expect(res.status).toBe(200);
+      const data = res.text.split('\n');
+      expect(data).toMatchSnapshot();
+    });
   });
 });

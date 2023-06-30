@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId } from 'mongodb';
+import { Db, Filter, MongoClient, ObjectId } from 'mongodb';
 import { Request } from 'express';
 
 interface StaticAsset {
@@ -44,9 +44,12 @@ const PROD_PATH = '/prod/';
 
 let db: Db, prodDb: Db;
 
-const getPageIdQuery = (projectName: string, branch: string) => {
+const getPageIdQuery = (projectName: string, branch?: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
-  const pageIdPrefix = `${projectName}/${user}/${branch}`;
+  let pageIdPrefix = `${projectName}/${user}`;
+  if (branch) {
+    pageIdPrefix += `/${branch}`;
+  }
   return { $regex: new RegExp(`^${pageIdPrefix}/`) };
 };
 
@@ -61,42 +64,79 @@ export const initDb = (client: MongoClient) => {
 
 const getDb = (request: Request) => (request.baseUrl.startsWith(PROD_PATH) ? prodDb : db);
 
-export const findAssetsByChecksums = async (checksums: string[], req: Request) => {
+export const findAssetsByChecksums = (checksums: string[], req: Request) => {
   return getDb(req)
     .collection<AssetDocument>(ASSETS_COLLECTION)
     .find({ _id: { $in: checksums } });
 };
 
-export const findPagesByBuildId = async (buildId: string | ObjectId, req: Request) => {
+export const findPagesByBuildId = (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
   return getDb(req).collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProject = async (project: string, branch: string, req: Request) => {
+export const findPagesByProj = (project: string, req: Request, timestamp?: number) => {
+  const pageIdQuery = getPageIdQuery(project);
+  const query: Filter<UpdatedPageDocument> = { page_id: pageIdQuery };
+  if (timestamp) {
+    const lastQuery = new Date(timestamp);
+    query['updated_at'] = { $gte: lastQuery };
+  }
+  console.log(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+};
+
+export const findPagesByProjAndBranch = (project: string, branch: string, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number, req: Request) => {
+export const findUpdatedPagesByProjAndBranch = (project: string, branch: string, timestamp: number, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
-  const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
+  const query = { page_id: pageIdQuery, updated_at: { $gte: updatedAtQuery } };
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findOneMetadataByBuildId = async (buildId: string | ObjectId, req: Request) => {
+export const findMetadataByBuildId = (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  return getDb(req).collection(METADATA_COLLECTION).findOne(query);
+  return getDb(req).collection(METADATA_COLLECTION).find(query);
 };
 
-export const findLatestMetadata = async (project: string, branch: string, req: Request) => {
-  const filter = { project, branch };
-  const res = await getDb(req).collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
-  if (!res || res.length !== 1) {
-    return null;
+/**
+ * Returns all metadata documents for a given project
+ * @param project
+ * @param lastQuery
+ * @returns
+ */
+export const findLatestMetadataByProj = (project: string, req: Request, timestamp?: number) => {
+  const matchFilter: Filter<Document> = { project: project };
+
+  if (timestamp) {
+    const lastQuery = new Date(timestamp);
+    matchFilter['created_at'] = { $gte: lastQuery };
   }
-  return res[0];
+
+  const aggregationStages = [
+    // Look for all metadata documents of the same project
+    { $match: matchFilter },
+    // Sort them so that most recent documents are first
+    { $sort: { created_at: -1 } },
+    // Group documents by their branch, and only embed the first doc seen
+    // (or most recent, based on sorting stage)
+    { $group: { _id: '$branch', doc: { $first: '$$ROOT' } } },
+    // Un-embed the doc from each group
+    { $replaceRoot: { newRoot: '$doc' } },
+    // Arbitrarily sort results to help avoid flaky tests
+    { $sort: { created_at: -1 } },
+  ];
+  return getDb(req).collection(METADATA_COLLECTION).aggregate(aggregationStages);
+};
+
+export const findLatestMetadataByProjAndBranch = (project: string, branch: string, req: Request) => {
+  const filter = { project, branch };
+  return getDb(req).collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1);
 };
