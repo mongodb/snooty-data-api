@@ -59,7 +59,7 @@ export const initDb = (client: MongoClient) => {
   prodDb = client.db(prodDbName);
 };
 
-const getDb = (request: Request) => (request.baseUrl === PROD_PATH ? prodDb : db);
+const getDb = (request: Request) => (request.baseUrl.startsWith(PROD_PATH) ? prodDb : db);
 
 export const findAssetsByChecksums = async (checksums: string[], req: Request) => {
   return getDb(req)
