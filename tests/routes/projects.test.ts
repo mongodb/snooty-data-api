@@ -54,8 +54,8 @@ describe('Test projects routes', () => {
   });
 
   it('should return documents updated after given timestamp', async () => {
-    const prevBuildTime = sampleMetadata[0].created_at;
-    const timestamp = new Date(prevBuildTime).getTime();
+    // timestamp is set to 1 minute after first document, to simulate the last time the document was queried
+    const timestamp = new Date('2023-04-06T13:26:40.000Z').getTime();
     const res = await request(app).get(`/projects/docs/master/documents/updated/${timestamp}`);
     expect(res.status).toBe(200);
     const data = res.text.split('\n');
@@ -71,7 +71,7 @@ describe('Test projects routes', () => {
     });
 
     it('should return all data after updated query param', async () => {
-      const prevBuildTime = sampleMetadata[0].created_at;
+      const prevBuildTime = new Date('2023-04-06T13:26:40.000Z').getTime();
       const timestamp = new Date(prevBuildTime).getTime();
       const res = await request(app).get(`/projects/docs/documents?updated=${timestamp}`);
       expect(res.status).toBe(200);

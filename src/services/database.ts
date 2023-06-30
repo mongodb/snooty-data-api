@@ -81,7 +81,7 @@ export const findPagesByProj = (project: string, req: Request, timestamp?: numbe
   const query: Filter<UpdatedPageDocument> = { page_id: pageIdQuery };
   if (timestamp) {
     const lastQuery = new Date(timestamp);
-    query['updated_at'] = { $gt: lastQuery };
+    query['updated_at'] = { $gte: lastQuery };
   }
   console.log(query);
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
@@ -96,7 +96,7 @@ export const findPagesByProjAndBranch = (project: string, branch: string, req: R
 export const findUpdatedPagesByProjAndBranch = (project: string, branch: string, timestamp: number, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
-  const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
+  const query = { page_id: pageIdQuery, updated_at: { $gte: updatedAtQuery } };
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
@@ -117,7 +117,7 @@ export const findLatestMetadataByProj = (project: string, req: Request, timestam
 
   if (timestamp) {
     const lastQuery = new Date(timestamp);
-    matchFilter['created_at'] = { $gt: lastQuery };
+    matchFilter['created_at'] = { $gte: lastQuery };
   }
 
   const aggregationStages = [

@@ -54,7 +54,12 @@ const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<stri
   });
 };
 
-const streamPages = async (pipeline: Duplex, pagesCursor: FindCursor<PageDocType>, req: Request, opts: DataStreamOptions = {}) => {
+const streamPages = async (
+  pipeline: Duplex,
+  pagesCursor: FindCursor<PageDocType>,
+  req: Request,
+  opts: DataStreamOptions = {}
+) => {
   const assetData: Record<string, Set<string>> = {};
   let pageCount = 0;
   const { updatedAssetsOnly, reqTimestamp, reqId } = opts;
