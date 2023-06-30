@@ -1,4 +1,5 @@
 import { Db, MongoClient, ObjectId } from 'mongodb';
+import { Request } from 'express';
 
 interface StaticAsset {
   checksum: string;
@@ -39,8 +40,9 @@ const METADATA_COLLECTION = 'metadata';
 const PAGES_COLLECTION = 'documents';
 const UPDATED_PAGES_COLLECTION = 'updated_documents';
 const ASSETS_COLLECTION = 'assets';
+const PROD_PATH = '/prod/';
 
-let db: Db;
+let db: Db, prodDb: Db;
 
 const getPageIdQuery = (projectName: string, branch: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
@@ -53,40 +55,46 @@ const getPageIdQuery = (projectName: string, branch: string) => {
 export const initDb = (client: MongoClient) => {
   const dbName = process.env.SNOOTY_DB_NAME ?? 'snooty_dev';
   db = client.db(dbName);
+  const prodDbName = process.env.SNOOTY_PROD_DB_NAME ?? 'snooty_dev'; // prodDbName represents production deployments (vs staging)
+  prodDb = client.db(prodDbName);
 };
 
-export const findAssetsByChecksums = async (checksums: string[]) => {
-  return db.collection<AssetDocument>(ASSETS_COLLECTION).find({ _id: { $in: checksums } });
+const getDb = (request: Request) => (request.baseUrl.startsWith(PROD_PATH) ? prodDb : db);
+
+export const findAssetsByChecksums = async (checksums: string[], req: Request) => {
+  return getDb(req)
+    .collection<AssetDocument>(ASSETS_COLLECTION)
+    .find({ _id: { $in: checksums } });
 };
 
-export const findPagesByBuildId = async (buildId: string | ObjectId) => {
+export const findPagesByBuildId = async (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  return db.collection<PageDocument>(PAGES_COLLECTION).find(query);
+  return getDb(req).collection<PageDocument>(PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByProject = async (project: string, branch: string) => {
+export const findPagesByProject = async (project: string, branch: string, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
-  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number) => {
+export const findUpdatedPagesByProject = async (project: string, branch: string, timestamp: number, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const updatedAtQuery = new Date(timestamp);
   const query = { page_id: pageIdQuery, updated_at: { $gt: updatedAtQuery } };
-  return db.collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findOneMetadataByBuildId = async (buildId: string | ObjectId) => {
+export const findOneMetadataByBuildId = async (buildId: string | ObjectId, req: Request) => {
   const id = new ObjectId(buildId);
   const query = { build_id: id };
-  return db.collection(METADATA_COLLECTION).findOne(query);
+  return getDb(req).collection(METADATA_COLLECTION).findOne(query);
 };
 
-export const findLatestMetadata = async (project: string, branch: string) => {
+export const findLatestMetadata = async (project: string, branch: string, req: Request) => {
   const filter = { project, branch };
-  const res = await db.collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
+  const res = await getDb(req).collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1).toArray();
   if (!res || res.length !== 1) {
     return null;
   }

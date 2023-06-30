@@ -11,9 +11,9 @@ router.get('/:buildId/documents', async (req, res, next) => {
   const { buildId } = req.params;
   const reqId = getRequestId(req);
   try {
-    const pagesCursor = await findPagesByBuildId(buildId);
-    const metadataDoc = await findOneMetadataByBuildId(buildId);
-    await streamData(res, pagesCursor, metadataDoc, { reqId });
+    const pagesCursor = await findPagesByBuildId(buildId, req);
+    const metadataDoc = await findOneMetadataByBuildId(buildId, req);
+    await streamData(res, pagesCursor, metadataDoc, { reqId }, req);
   } catch (err) {
     next(err);
   }
