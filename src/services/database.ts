@@ -55,11 +55,11 @@ const getPageIdQuery = (projectName: string, branch: string) => {
 export const initDb = (client: MongoClient) => {
   const dbName = process.env.SNOOTY_DB_NAME ?? 'snooty_dev';
   db = client.db(dbName);
-  const prodDbName = process.env.SNOOTY_PROD_DB_NAME ?? 'snooty_dev';
+  const prodDbName = process.env.SNOOTY_PROD_DB_NAME ?? 'snooty_dev'; // prodDbName represents production deployments (vs staging)
   prodDb = client.db(prodDbName);
 };
 
-const getDb = (request: Request) => (request.path?.startsWith(PROD_PATH) ? prodDb : db);
+const getDb = (request: Request) => (request.baseUrl === PROD_PATH ? prodDb : db);
 
 export const findAssetsByChecksums = async (checksums: string[], req: Request) => {
   return getDb(req)
