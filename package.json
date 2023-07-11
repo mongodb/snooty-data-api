@@ -12,7 +12,7 @@
     "prettier": "prettier '**/*.{js,jsx,ts,tsx,json,md}'",
     "start": "node ./dist/index.js",
     "test": "jest",
-    "swagger-autogen": "node swagger.js"
+    "swagger-autogen": "node swagger.mjs"
   },
   "engines": {
     "node": "^18",
