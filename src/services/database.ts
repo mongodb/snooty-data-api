@@ -21,6 +21,7 @@ interface PageDocument {
   static_assets: StaticAsset[];
   build_id: ObjectId;
   created_at: Date;
+  github_username: string;
 }
 
 interface UpdatedPageDocument {
@@ -31,6 +32,7 @@ interface UpdatedPageDocument {
   static_assets: StaticAsset[];
   created_at: Date;
   updated_at: Date;
+  github_username: string;
   deleted: boolean;
 }
 
