@@ -87,6 +87,16 @@ export const findPagesByProj = (project: string, req: Request, timestamp?: numbe
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
+export const findPagesByUser = (user: string, req: Request, timestamp?: number) => {
+  const query: Filter<UpdatedPageDocument> = { github_username: user };
+  if (timestamp) {
+    const lastQuery = new Date(timestamp);
+    query['updated_at'] = { $gte: lastQuery };
+  }
+  console.log(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+};
+
 export const findPagesByProjAndBranch = (project: string, branch: string, req: Request) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query = { page_id: pageIdQuery };
@@ -139,4 +149,30 @@ export const findLatestMetadataByProj = (project: string, req: Request, timestam
 export const findLatestMetadataByProjAndBranch = (project: string, branch: string, req: Request) => {
   const filter = { project, branch };
   return getDb(req).collection(METADATA_COLLECTION).find(filter).sort('created_at', -1).limit(1);
+};
+
+export const findLatestMetadataByUser = (user: string, req: Request, timestamp?: number) => {
+  const matchFilter: Filter<Document> = { github_username: user };
+
+  if (timestamp) {
+    console.log('timestamp', timestamp);
+    const lastQuery = new Date(timestamp);
+    console.log('LAST QUERY', lastQuery);
+    matchFilter['created_at'] = { $gte: lastQuery };
+  }
+
+  const aggregationStages = [
+    // Look for all metadata documents of the same user
+    { $match: matchFilter },
+    // Sort them so that most recent documents are first
+    { $sort: { created_at: -1 } },
+    // Group documents by their project, and only embed the first doc seen
+    // (or most recent, based on sorting stage)
+    { $group: { _id: '$project', doc: { $first: '$$ROOT' } } },
+    // Un-embed the doc from each group
+    { $replaceRoot: { newRoot: '$doc' } },
+    // Arbitrarily sort results to help avoid flaky tests
+    { $sort: { created_at: -1 } },
+  ];
+  return getDb(req).collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };

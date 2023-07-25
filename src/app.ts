@@ -5,6 +5,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 dotenv.config();
 import buildsRouter from './routes/builds';
 import projectsRouter from './routes/projects';
+import userRouter from './routes/user';
 import { connect } from './services/client';
 import { initDb } from './services/database';
 import { initPoolDb } from './services/pool';
@@ -55,8 +56,10 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   app.use(reqHandler);
   app.use('/builds', buildsRouter);
   app.use('/projects', projectsRouter);
+  app.use('/user', userRouter);
   app.use('/prod/builds', buildsRouter);
   app.use('/prod/projects', projectsRouter);
+  app.use('prod/user', userRouter);
   app.use(errorHandler);
 
   return app;
