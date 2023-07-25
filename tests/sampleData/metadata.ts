@@ -26,7 +26,7 @@ export const sampleMetadata = [
     toctreeorder: {},
     parentPaths: {},
     static_files: {},
-    build_id: new ObjectId('642ec854c38bedd45ed3d1fc'),
+    build_id: new ObjectId('642ec854c38bedd45ed3d188'),
     created_at: new Date('2023-04-06T13:25:40.000Z'),
   },
   {
