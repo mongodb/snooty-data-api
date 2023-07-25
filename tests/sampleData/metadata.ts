@@ -75,6 +75,7 @@ export const sampleMetadata = [
     _id: new ObjectId('646bae50c41d7b9a472b6080'),
     project: 'docs',
     branch: 'not-master',
+    github_username: 'babadook',
     title: 'MongoDB Manual',
     eol: false,
     slugToTitle: {},
