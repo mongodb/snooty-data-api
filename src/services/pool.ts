@@ -16,6 +16,7 @@ interface BranchEntry {
   gitBranchName: string;
   active: boolean;
   urlAliases: string[];
+  isStableBranch: boolean;
   [key: string]: any;
 }
 
@@ -28,13 +29,14 @@ interface RepoDocument extends WithId<Document> {
   search: Record<string, string>;
 }
 
-interface BranchResponse {
+export interface BranchResponse {
   gitBranchName: string;
   active: boolean;
   fullUrl: string;
+  isStableBranch: boolean;
 }
 
-interface RepoResponse {
+export interface RepoResponse {
   repoName: string;
   project: string;
   search: Record<string, string>;
@@ -92,6 +94,7 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) =>
     gitBranchName: branchEntry.gitBranchName,
     active: branchEntry.active,
     fullUrl: `${fullBaseUrl}` + (branchEntry.urlSlug ? `${branchEntry.urlSlug}` : ''),
+    isStableBranch: !!branchEntry.isStableBranch,
   }));
 
 const mapRepos = (repo: RepoDocument): RepoResponse => ({
