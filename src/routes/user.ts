@@ -1,5 +1,5 @@
 import express from 'express';
-import { findLatestMetadataByUser, findPagesByUser } from '../services/database';
+import { findLatestMetadataByProperty, findPagesByUser } from '../services/database';
 import { streamData } from '../services/dataStreamer';
 import { getRequestId } from '../utils';
 
@@ -17,7 +17,7 @@ router.get('/:githubUser/documents', async (req, res, next) => {
 
   const reqId = getRequestId(req);
   try {
-    const metadataCursor = findLatestMetadataByUser(githubUser, req, parsedTimestampVal);
+    const metadataCursor = findLatestMetadataByProperty({ github_username: githubUser }, req, parsedTimestampVal);
     const pagesCursor = findPagesByUser(githubUser, req, parsedTimestampVal);
     await streamData(res, pagesCursor, metadataCursor, { reqId }, req);
   } catch (err) {
