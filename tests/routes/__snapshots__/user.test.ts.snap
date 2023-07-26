@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Test user routes /user/:githubUser/documents should return all data after updated query param 1`] = `
+exports[`Test user routes /user/:githubUser should return all data after updated query param 1`] = `
 [
   "{"type":"timestamp","data":1685714694420}",
   "{"type":"metadata","data":{"_id":"646bae50c41d7b9a472b6078","project":"docs","branch":"master","github_username":"babadook","title":"MongoDB Manual","eol":false,"slugToTitle":{},"toctreeorder":{},"parentPaths":{},"static_files":{},"build_id":"642ec854c38bedd45ed31234","created_at":"2023-04-06T14:25:40.000Z"}}",
@@ -11,7 +11,7 @@ exports[`Test user routes /user/:githubUser/documents should return all data aft
 ]
 `;
 
-exports[`Test user routes /user/:githubUser/documents should return all metadata and pages for all branches and all projects for 1 github user: babadook 1`] = `
+exports[`Test user routes /user/:githubUser should return all metadata and pages for all branches and all projects for 1 github user: babadook 1`] = `
 [
   "{"type":"timestamp","data":1685714694420}",
   "{"type":"metadata","data":{"_id":"646bae50c41d7b9a472b6078","project":"docs","branch":"master","github_username":"babadook","title":"MongoDB Manual","eol":false,"slugToTitle":{},"toctreeorder":{},"parentPaths":{},"static_files":{},"build_id":"642ec854c38bedd45ed31234","created_at":"2023-04-06T14:25:40.000Z"}}",
@@ -27,7 +27,7 @@ exports[`Test user routes /user/:githubUser/documents should return all metadata
 ]
 `;
 
-exports[`Test user routes /user/:githubUser/documents should return all metadata and pages for all branches and all projects for 1 github user: docs-builder-bot 1`] = `
+exports[`Test user routes /user/:githubUser should return all metadata and pages for all branches and all projects for 1 github user: docs-builder-bot 1`] = `
 [
   "{"type":"timestamp","data":1685714694420}",
   "{"type":"metadata","data":{"_id":"646bae50c41d7b9a472b6076","project":"docs","branch":"master","github_username":"docs-builder-bot","title":"MongoDB Manual","eol":false,"slugToTitle":{},"toctreeorder":{},"parentPaths":{},"static_files":{},"build_id":"642ec854c38bedd45ed3d188","created_at":"2023-04-06T13:25:40.000Z"}}",

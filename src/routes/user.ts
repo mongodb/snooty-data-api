@@ -6,7 +6,7 @@ import { getRequestId } from '../utils';
 const router = express.Router();
 
 // Returns all build data needed for all branches of all projects for a single github user
-router.get('/:githubUser/documents', async (req, res, next) => {
+router.get('/:githubUser', async (req, res, next) => {
   const { githubUser } = req.params;
   const { updated } = req.query;
 
