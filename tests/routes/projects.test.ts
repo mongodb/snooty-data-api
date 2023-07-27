@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
+import { BranchResponse, RepoResponse } from '../../src/services/pool';
 import { sampleReposBranches } from '../sampleData/reposBranches';
 
 const timestamp = 1685714694420;
@@ -26,6 +27,12 @@ describe('Test projects routes', () => {
     expect(projects.length).toBeLessThanOrEqual(sampleReposBranches.length);
     expect(projects.find((p: any) => p?.repoName === 'cloud-docs')).toBeTruthy();
     expect(projects.filter((p: any) => p?.repoName?.includes('internal'))).toHaveLength(0);
+    projects.forEach((p: RepoResponse) => {
+      p.branches.forEach((b: BranchResponse) => {
+        expect(b.isStableBranch).toBeDefined();
+        expect(typeof b.isStableBranch).toBe('boolean');
+      });
+    });
   });
 
   it('should return all data based on project and branch', async () => {
