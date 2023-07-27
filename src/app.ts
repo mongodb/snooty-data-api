@@ -59,7 +59,6 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   app.use('/user', userRouter);
   app.use('/prod/builds', buildsRouter);
   app.use('/prod/projects', projectsRouter);
-  app.use('/prod/user', userRouter);
   app.use(errorHandler);
 
   return app;
