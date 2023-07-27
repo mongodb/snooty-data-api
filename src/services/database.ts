@@ -90,9 +90,9 @@ export const findPagesByProj = (project: string, req: Request, timestamp?: numbe
 export const findPagesByProjAndBranch = (project: string, branch: string, req: Request, timestamp?: number) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   let query: Filter<UpdatedPageDocument> = { page_id: pageIdQuery };
-  if(timestamp) {
+  if (timestamp) {
     const updatedAtQuery = new Date(timestamp);
-    query['updated_at'] = { $gte: updatedAtQuery }
+    query['updated_at'] = { $gte: updatedAtQuery };
   }
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };

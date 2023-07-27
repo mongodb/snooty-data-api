@@ -13,7 +13,6 @@ export interface StreamData {
   data: any;
 }
 
-
 const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, req: Request, reqId?: string) => {
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
