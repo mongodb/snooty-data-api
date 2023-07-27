@@ -9,12 +9,7 @@ import {
 import { streamData } from '../services/dataStreamer';
 import { findAllRepos } from '../services/pool';
 import { getRequestId } from '../utils';
-
-type StreamDataOptions = {
-  reqId: string | undefined;
-  reqTimestamp?: number;
-  updatedAssetsOnly?: boolean;
-};
+import { DataStreamOptions } from '../types';
 
 const router = express.Router();
 
@@ -59,18 +54,16 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   try {
     const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch, req);
 
-    // base methods for no query param update
-    let pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req);
-    let streamDataOptions: StreamDataOptions = { reqId };
+    const timestamp = req.query.updated && Number(req.query.updated) ? req.query.updated : null;
+    const timestampNum = timestamp ? parseInt((timestamp as string)) : undefined;
 
-    if (req.query.updated && Number(req.query.updated)) {
-      // reconstruct to use the logic in
-      // /:snootyProject/:branch/documents/updated/:timestamp' route
-      const timestamp = req.query.updated as string;
-      const timestampNum = parseInt(timestamp);
-      pagesCursor = findUpdatedPagesByProjAndBranch(snootyProject, branch, timestampNum, req);
+    let pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req, timestampNum);
+    let streamDataOptions: DataStreamOptions = { reqId };
+    
+    if (timestampNum) {
       streamDataOptions = { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true };
     }
+
     await streamData(res, pagesCursor, metadataCursor, streamDataOptions, req);
   } catch (err) {
     next(err);
