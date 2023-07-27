@@ -4,7 +4,7 @@ import {
   findPagesByProjAndBranch,
   findUpdatedPagesByProjAndBranch,
   findPagesByProj,
-  findLatestMetadataByProj,
+  findLatestMetadataByProperty,
 } from '../services/database';
 import { streamData } from '../services/dataStreamer';
 import { findAllRepos } from '../services/pool';
@@ -37,7 +37,7 @@ router.get('/:snootyProject/documents', async (req, res, next) => {
 
   const reqId = getRequestId(req);
   try {
-    const metadataCursor = findLatestMetadataByProj(snootyProject, req, parsedUpdatedVal);
+    const metadataCursor = findLatestMetadataByProperty({ project: snootyProject }, req, parsedUpdatedVal);
     const pagesCursor = findPagesByProj(snootyProject, req, parsedUpdatedVal);
     await streamData(res, pagesCursor, metadataCursor, { reqId }, req);
   } catch (err) {
