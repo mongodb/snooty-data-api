@@ -21,6 +21,7 @@ interface PageDocument {
   static_assets: StaticAsset[];
   build_id: ObjectId;
   created_at: Date;
+  github_username: string;
 }
 
 interface UpdatedPageDocument {
@@ -31,6 +32,7 @@ interface UpdatedPageDocument {
   static_assets: StaticAsset[];
   created_at: Date;
   updated_at: Date;
+  github_username: string;
   deleted: boolean;
 }
 
@@ -83,7 +85,15 @@ export const findPagesByProj = (project: string, req: Request, timestamp?: numbe
     const lastQuery = new Date(timestamp);
     query['updated_at'] = { $gte: lastQuery };
   }
-  console.log(query);
+  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
+};
+
+export const findPagesByUser = (user: string, req: Request, timestamp?: number) => {
+  const query: Filter<UpdatedPageDocument> = { github_username: user };
+  if (timestamp) {
+    const lastQuery = new Date(timestamp);
+    query['updated_at'] = { $gte: lastQuery };
+  }
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
@@ -112,17 +122,15 @@ export const findMetadataByBuildId = (buildId: string | ObjectId, req: Request) 
  * @param lastQuery
  * @returns
  */
-export const findLatestMetadataByProj = (project: string, req: Request, timestamp?: number) => {
-  const matchFilter: Filter<Document> = { project: project };
-
+export const findLatestMetadataByProperty = (filter: Filter<Document>, req: Request, timestamp?: number) => {
   if (timestamp) {
     const lastQuery = new Date(timestamp);
-    matchFilter['created_at'] = { $gte: lastQuery };
+    filter['created_at'] = { $gte: lastQuery };
   }
 
   const aggregationStages = [
     // Look for all metadata documents of the same project
-    { $match: matchFilter },
+    { $match: filter },
     // Sort them so that most recent documents are first
     { $sort: { created_at: -1 } },
     // Group documents by their branch, and only embed the first doc seen

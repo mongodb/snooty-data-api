@@ -10,6 +10,7 @@ export const samplePageDocuments = [
     static_assets: [],
     build_id: new ObjectId('642ec854c38bedd45ed3d1fc'),
     created_at: new Date('2023-04-06T13:25:40.000Z'),
+    github_username: 'babadook',
   },
   {
     _id: new ObjectId('646e8ab3806cedd1747f0592'),
@@ -25,6 +26,7 @@ export const samplePageDocuments = [
     ],
     build_id: new ObjectId('642ec854c38bedd45ed3d1fc'),
     created_at: new Date('2023-04-06T13:25:40.000Z'),
+    github_username: 'babadook',
   },
   {
     _id: new ObjectId('646e8ab3806cedd1747f0593'),
@@ -44,6 +46,7 @@ export const samplePageDocuments = [
     ],
     build_id: new ObjectId('642ec854c38bedd45ed3d1fc'),
     created_at: new Date('2023-04-06T13:25:40.000Z'),
+    github_username: 'babadook',
   },
   {
     _id: new ObjectId('646e8ab3806cedd1747f0594'),
@@ -54,5 +57,6 @@ export const samplePageDocuments = [
     static_assets: [],
     build_id: new ObjectId('642ec858c38bedd45ed3dd54'),
     created_at: new Date('2023-04-06T13:25:40.000Z'),
+    github_username: 'docs-builder-bot',
   },
 ];
