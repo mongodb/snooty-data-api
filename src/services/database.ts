@@ -85,7 +85,6 @@ export const findPagesByProj = (project: string, req: Request, timestamp?: numbe
     const lastQuery = new Date(timestamp);
     query['updated_at'] = { $gte: lastQuery };
   }
-  console.log(query);
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
@@ -95,7 +94,6 @@ export const findPagesByUser = (user: string, req: Request, timestamp?: number) 
     const lastQuery = new Date(timestamp);
     query['updated_at'] = { $gte: lastQuery };
   }
-  console.log(query);
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 

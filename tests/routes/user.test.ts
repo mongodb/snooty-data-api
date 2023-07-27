@@ -18,16 +18,16 @@ describe('Test user routes', () => {
     await client.close();
   });
 
-  describe('/user/:githubUser', () => {
+  describe('/user/:githubUser/documents', () => {
     it('should return all metadata and pages for all branches and all projects for 1 github user: babadook', async () => {
-      const res = await request(app).get('/user/babadook');
+      const res = await request(app).get('/user/babadook/documents');
       expect(res.status).toBe(200);
       const data = res.text.split('\n');
       expect(data).toMatchSnapshot();
     });
 
     it('should return all metadata and pages for all branches and all projects for 1 github user: docs-builder-bot', async () => {
-      const res = await request(app).get('/user/docs-builder-bot');
+      const res = await request(app).get('/user/docs-builder-bot/documents');
       expect(res.status).toBe(200);
       const data = res.text.split('\n');
       expect(data).toMatchSnapshot();
@@ -36,7 +36,7 @@ describe('Test user routes', () => {
     it('should return all data after updated query param', async () => {
       const prevBuildTime = new Date('2023-04-06T13:26:40.000Z').getTime();
       const timestamp = new Date(prevBuildTime).getTime();
-      const res = await request(app).get(`/user/babadook?updated=${timestamp}`);
+      const res = await request(app).get(`/user/babadook/documents?updated=${timestamp}`);
       expect(res.status).toBe(200);
       const data = res.text.split('\n');
       expect(data).toMatchSnapshot();
