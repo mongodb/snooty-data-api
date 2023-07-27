@@ -56,8 +56,8 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
 
     const timestamp = req.query.updated && Number(req.query.updated) ? req.query.updated : null;
     const timestampNum = timestamp ? parseInt(timestamp as string) : undefined;
+    const pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req, timestampNum);
 
-    let pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req, timestampNum);
     let streamDataOptions: DataStreamOptions = { reqId };
 
     if (timestampNum) {
