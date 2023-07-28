@@ -4,18 +4,13 @@ import { chain } from 'stream-chain';
 import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
 import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
 import { createMessage, initiateLogger } from './logger';
+import { DataStreamOptions } from '../types';
 
 const logger = initiateLogger();
 
 export interface StreamData {
   type: string;
   data: any;
-}
-
-interface DataStreamOptions {
-  reqId?: string;
-  reqTimestamp?: number;
-  updatedAssetsOnly?: boolean;
 }
 
 const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, req: Request, reqId?: string) => {
