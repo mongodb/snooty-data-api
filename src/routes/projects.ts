@@ -9,6 +9,7 @@ import {
 import { streamData } from '../services/dataStreamer';
 import { findAllRepos } from '../services/pool';
 import { getRequestId } from '../utils';
+import { DataStreamOptions } from '../types';
 
 const router = express.Router();
 
@@ -52,13 +53,24 @@ router.get('/:snootyProject/:branch/documents', async (req, res, next) => {
   const reqId = getRequestId(req);
   try {
     const metadataCursor = findLatestMetadataByProjAndBranch(snootyProject, branch, req);
-    const pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req);
-    await streamData(res, pagesCursor, metadataCursor, { reqId }, req);
+
+    const timestamp = req.query.updated && Number(req.query.updated) ? req.query.updated : null;
+    const timestampNum = timestamp ? parseInt(timestamp as string) : undefined;
+    const pagesCursor = findPagesByProjAndBranch(snootyProject, branch, req, timestampNum);
+
+    let streamDataOptions: DataStreamOptions = { reqId };
+
+    if (timestampNum) {
+      streamDataOptions = { reqId, reqTimestamp: timestampNum, updatedAssetsOnly: true };
+    }
+
+    await streamData(res, pagesCursor, metadataCursor, streamDataOptions, req);
   } catch (err) {
     next(err);
   }
 });
 
+// TODO: at a later point we plan to deprecate this route as we consolidated with the above route.
 router.get('/:snootyProject/:branch/documents/updated/:timestamp', async (req, res, next) => {
   const { snootyProject, branch, timestamp } = req.params;
   const timestampNum = parseInt(timestamp);
