@@ -62,7 +62,7 @@ npm run format:fix
 
 ## Endpoints
 
-The following are the base URL for the endpoints use in this Data API;
+The following are the base URLs for the Snooty Data API;
 
 - `https://snooty-data-api.mongodb.com/`
 - `https://snooty-data-api.docs.staging.corp.mongodb.com/`
