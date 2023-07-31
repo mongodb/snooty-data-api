@@ -66,5 +66,3 @@ The base URL for the endpoints
 
 - `https://snooty-data-api.mongodb.com/`
 - `https://snooty-data-api.docs.staging.corp.mongodb.com/`
-
-

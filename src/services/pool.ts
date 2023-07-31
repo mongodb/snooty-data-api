@@ -90,16 +90,15 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
 const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(baseUrl) + assertTrailingSlash(prefix);
 
 /**
- * 
- * branch full url util, 
+ *
+ * branch full url util,
  * It dynamically handling url slugs for
  * repos that have more then one version
  */
 const setBranchFullUrl = (branchEntry: BranchEntry, fullBaseUrl: string, useUrlSlug = true) => {
   const urlSlug = useUrlSlug && branchEntry?.usrSlug ? branchEntry.urlSlug : '';
   return `${fullBaseUrl}${urlSlug}`;
-}
-
+};
 
 const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
   return branches.map((branchEntry) => ({
@@ -107,8 +106,8 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
     active: branchEntry.active,
     fullUrl: setBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
     isStableBranch: !!branchEntry.isStableBranch,
-  }))
-}
+  }));
+};
 
 const mapRepos = (repo: RepoDocument): RepoResponse => ({
   repoName: repo.repoName,
