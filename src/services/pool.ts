@@ -95,7 +95,7 @@ const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(base
  * It dynamically handling url slugs for
  * repos that have more then one version
  */
-const setBranchFullUrl = (branchEntry: BranchEntry, fullBaseUrl: string, useUrlSlug = true) => {
+const getBranchFullUrl = (branchEntry: BranchEntry, fullBaseUrl: string, useUrlSlug = true) => {
   const urlSlug = useUrlSlug && branchEntry?.urlSlug ? branchEntry.urlSlug : '';
   return `${fullBaseUrl}${urlSlug}`;
 };
@@ -104,7 +104,7 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
   return branches.map((branchEntry) => ({
     gitBranchName: branchEntry.gitBranchName,
     active: branchEntry.active,
-    fullUrl: setBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
+    fullUrl: getBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
     isStableBranch: !!branchEntry.isStableBranch,
   }));
 };
