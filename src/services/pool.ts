@@ -96,7 +96,7 @@ const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(base
  * repos that have more then one version
  */
 const setBranchFullUrl = (branchEntry: BranchEntry, fullBaseUrl: string, useUrlSlug = true) => {
-  const urlSlug = useUrlSlug && branchEntry?.usrSlug ? branchEntry.urlSlug : '';
+  const urlSlug = useUrlSlug && branchEntry?.urlSlug ? branchEntry.urlSlug : '';
   return `${fullBaseUrl}${urlSlug}`;
 };
 
