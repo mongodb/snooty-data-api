@@ -59,3 +59,10 @@ If there are errors flagged through `prettier`, use:
 ```
 npm run format:fix
 ```
+
+## Endpoints
+
+The following are the base URLs for the Snooty Data API:
+
+- `https://snooty-data-api.mongodb.com/`
+- `https://snooty-data-api.docs.staging.corp.mongodb.com/`

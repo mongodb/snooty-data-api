@@ -89,13 +89,25 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
 
 const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(baseUrl) + assertTrailingSlash(prefix);
 
-const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) =>
-  branches.map((branchEntry) => ({
+/**
+ *
+ * branch full url util,
+ * It dynamically handling url slugs for
+ * repos that have more then one version
+ */
+const getBranchFullUrl = (branchEntry: BranchEntry, fullBaseUrl: string, useUrlSlug = true) => {
+  const urlSlug = useUrlSlug && branchEntry?.urlSlug ? branchEntry.urlSlug : '';
+  return `${fullBaseUrl}${urlSlug}`;
+};
+
+const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
+  return branches.map((branchEntry) => ({
     gitBranchName: branchEntry.gitBranchName,
     active: branchEntry.active,
-    fullUrl: `${fullBaseUrl}` + (branchEntry.urlSlug ? `${branchEntry.urlSlug}` : ''),
+    fullUrl: getBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
     isStableBranch: !!branchEntry.isStableBranch,
   }));
+};
 
 const mapRepos = (repo: RepoDocument): RepoResponse => ({
   repoName: repo.repoName,
