@@ -129,12 +129,9 @@ export const findMetadataByBuildId = (buildId: string | ObjectId, req: Request) 
 export const findLatestMetadataByProperty = (filter: Filter<Document>, req: Request, timestamp?: number) => {
   if (timestamp) {
     const lastQuery = new Date(timestamp);
-    // Metadata documents are only updated whenever they're marked for deletion 
+    // Metadata documents are only updated whenever they're marked for deletion
     // after a PR is closed, so both Date fields should be accounted for
-    filter['$or'] = [
-      { created_at: { $gte: lastQuery } },
-      { updated_at: { $gte: lastQuery } },
-    ];
+    filter['$or'] = [{ created_at: { $gte: lastQuery } }, { updated_at: { $gte: lastQuery } }];
   }
 
   const aggregationStages = [
