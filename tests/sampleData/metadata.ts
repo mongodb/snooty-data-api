@@ -97,7 +97,7 @@ export const sampleMetadata = [
     parentPaths: {},
     static_files: {},
     build_id: new ObjectId('642ec854c38bedd45ed31237'),
-    created_at: new Date('2023-04-06T13:25:40.000Z'),
+    created_at: new Date('2023-04-06T13:26:40.000Z'),
     deleted: true,
     updated_at: new Date('2023-04-06T15:25:40.000Z'),
   },
