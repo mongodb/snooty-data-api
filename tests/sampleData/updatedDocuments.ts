@@ -105,7 +105,7 @@ export const sampleUpdatedPageDocuments = [
     ast: {},
     source: 'wahoo',
     static_assets: [],
-    created_at: new Date('2023-04-06T13:26:40.000Z'),
+    created_at: new Date('2023-04-03T13:26:40.000Z'),
     github_username: 'babadook',
     deleted: true,
     updated_at: new Date('2023-04-06T15:25:40.000Z'),
