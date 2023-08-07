@@ -149,9 +149,9 @@ steps:
     values_files: ['environments/pre-production.yml']
     # TODO-3925: These may need to be changed to the staging equivalent based on
     # current Kanopy secrets. Keeping this as-is for now for testing purposes.
-    api_server: https://api.prod.corp.mongodb.com
+    api_server: https://api.staging.corp.mongodb.com
     kubernetes_token:
-      from_secret: prod_kubernetes_token
+      from_secret: staging_kubernetes_token
 
 ---
 depends_on: ['test']
