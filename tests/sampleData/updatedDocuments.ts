@@ -98,4 +98,16 @@ export const sampleUpdatedPageDocuments = [
     github_username: 'babadook',
     deleted: false,
   },
+  {
+    _id: new ObjectId('646fa1958c4f35b1d3d83ee5'),
+    page_id: 'landing/docsworker-xlarge/updated-when-deleted/index',
+    filename: 'index.txt',
+    ast: {},
+    source: 'wahoo',
+    static_assets: [],
+    created_at: new Date('2023-04-03T13:26:40.000Z'),
+    github_username: 'babadook',
+    deleted: true,
+    updated_at: new Date('2023-04-06T15:25:40.000Z'),
+  },
 ];
