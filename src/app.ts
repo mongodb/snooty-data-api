@@ -37,6 +37,7 @@ const reqHandler: RequestHandler = (req, _res, next) => {
   // Custom header specifically for a request ID. This ID will be used to track
   // logs related to the same request
   req.headers['req-id'] = reqId;
+  console.log({req});
   const message = `Request for: ${req.url}`;
   logger.info(createMessage(message, reqId));
   next();
