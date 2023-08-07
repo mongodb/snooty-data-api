@@ -3,9 +3,7 @@ import dotenv from 'dotenv';
 import { MongoClient, ObjectId } from 'mongodb';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
-import buildsRouter from './routes/builds';
-import projectsRouter from './routes/projects';
-import userRouter from './routes/user';
+import baseRouter from './baseRouter';
 import { connect } from './services/client';
 import { initDb } from './services/database';
 import { initPoolDb } from './services/pool';
@@ -37,7 +35,6 @@ const reqHandler: RequestHandler = (req, _res, next) => {
   // Custom header specifically for a request ID. This ID will be used to track
   // logs related to the same request
   req.headers['req-id'] = reqId;
-  console.log({req});
   const message = `Request for: ${req.url}`;
   logger.info(createMessage(message, reqId));
   next();
@@ -55,11 +52,10 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
 
   const app = express();
   app.use(reqHandler);
-  app.use('/builds', buildsRouter);
-  app.use('/projects', projectsRouter);
-  app.use('/user', userRouter);
-  app.use('/prod/builds', buildsRouter);
-  app.use('/prod/projects', projectsRouter);
+  app.use('', baseRouter);
+  // Locally, this endpoint will not be different from the above router. This route
+  // exists to match the /pre-prod path on Kanopy.
+  app.use('/pre-prod', baseRouter);
   app.use(errorHandler);
 
   return app;
