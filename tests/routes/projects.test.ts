@@ -20,8 +20,23 @@ describe('Test projects routes', () => {
     await client.close();
   });
 
-  it('should return all external projects from the base route', async () => {
+  it('should return all external and internal projects from the base route', async () => {
     const res = await request(app).get('/projects');
+    expect(res.status).toBe(200);
+    const projects = JSON.parse(res.text)['data'];
+    expect(projects.length).toBeLessThanOrEqual(sampleReposBranches.length);
+    expect(projects.find((p: any) => p?.repoName === 'cloud-docs')).toBeTruthy();
+    expect(projects.filter((p: any) => p?.repoName === 'docs-mongodb-internal')).toBeTruthy();
+    projects.forEach((p: RepoResponse) => {
+      p.branches.forEach((b: BranchResponse) => {
+        expect(b.isStableBranch).toBeDefined();
+        expect(typeof b.isStableBranch).toBe('boolean');
+      });
+    });
+  });
+
+  it('should return all external projects from the prod base route', async () => {
+    const res = await request(app).get('/prod/projects');
     expect(res.status).toBe(200);
     const projects = JSON.parse(res.text)['data'];
     expect(projects.length).toBeLessThanOrEqual(sampleReposBranches.length);
