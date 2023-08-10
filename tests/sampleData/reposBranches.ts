@@ -46,6 +46,7 @@ export const sampleReposBranches = [
       categoryName: 'atlas',
       categoryTitle: 'Atlas',
     },
+    internalOnly: false,
   },
   {
     _id: new ObjectId('5f6aaeb682989d521a60636a'),
@@ -88,6 +89,7 @@ export const sampleReposBranches = [
       dotcomprd: 'docs',
     },
     project: 'landing',
+    internalOnly: false,
   },
   {
     _id: new ObjectId('5fac1ce373a72fca02ec90c5'),
@@ -342,6 +344,7 @@ export const sampleReposBranches = [
       categoryName: 'manual',
       categoryTitle: 'MongoDB Server',
     },
+    internalOnly: false,
   },
   {
     _id: new ObjectId('614b9f5b8d181382ca755ade'),
@@ -383,5 +386,6 @@ export const sampleReposBranches = [
     },
     project: 'docs',
     groups: null,
+    internalOnly: true,
   },
 ];

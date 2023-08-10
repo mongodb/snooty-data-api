@@ -76,7 +76,7 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
     const query: Filter<RepoDocument> = {
-      repoName: { $not: new RegExp('internal') },
+      internalOnly: false,
     };
     return db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
   } catch (e) {
