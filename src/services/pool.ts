@@ -75,9 +75,11 @@ export const findAllRepos = async (options: FindOptions = {}, isProd: boolean, r
       },
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    const query: Filter<RepoDocument> = isProd ? {
-      internalOnly: false,
-    } : {};
+    const query: Filter<RepoDocument> = isProd
+      ? {
+          internalOnly: false,
+        }
+      : {};
     return db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
   } catch (e) {
     logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
