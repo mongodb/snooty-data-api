@@ -60,7 +60,7 @@ export const initPoolDb = (client: MongoClient) => {
   return db;
 };
 
-export const findAllRepos = async (options: FindOptions = {}, reqId?: string) => {
+export const findAllRepos = async (options: FindOptions = {}, isProd: boolean, reqId?: string) => {
   try {
     const defaultSort: FindOptions = {
       sort: { repoName: 1 },
@@ -75,9 +75,11 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
       },
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    const query: Filter<RepoDocument> = {
-      repoName: { $not: new RegExp('internal') },
-    };
+    const query: Filter<RepoDocument> = isProd
+      ? {
+          internalOnly: false,
+        }
+      : {};
     return db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
   } catch (e) {
     logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));

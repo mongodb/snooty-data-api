@@ -16,8 +16,9 @@ const router = express.Router();
 // get all repo_branches route
 router.get('/', async (req, res, next) => {
   try {
+    const isProd = req.baseUrl.includes('prod');
     const reqId = getRequestId(req);
-    const data = await findAllRepos({}, reqId);
+    const data = await findAllRepos({}, isProd, reqId);
     res.send({ data: data });
   } catch (err) {
     next(err);
