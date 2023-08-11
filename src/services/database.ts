@@ -147,7 +147,7 @@ export const findLatestMetadataByProperty = (filter: Filter<Document>, req: Requ
     // Un-embed the doc from each group
     { $replaceRoot: { newRoot: '$doc' } },
     // Arbitrarily sort results to help avoid flaky tests
-    { $sort: { created_at: -1 } },
+    { $sort: { _id: -1 } },
   ];
   return getDb(req).collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };
