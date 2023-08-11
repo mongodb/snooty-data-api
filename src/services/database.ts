@@ -139,9 +139,11 @@ export const findLatestMetadataByProperty = (filter: Filter<Document>, req: Requ
     { $match: filter },
     // Sort them so that most recent documents are first
     { $sort: { created_at: -1 } },
-    // Group documents by their branch and project, and only embed the first doc seen
-    // (or most recent, based on sorting stage)
-    { $group: { _id: { project: '$project', branch: '$branch', user: '$github_username' }, doc: { $first: '$$ROOT' } } },
+    // Group documents by unique project + branch + user combination, and only 
+    // embed the first doc seen (or most recent, based on sorting stage)
+    {
+      $group: { _id: { project: '$project', branch: '$branch', user: '$github_username' }, doc: { $first: '$$ROOT' } },
+    },
     // Un-embed the doc from each group
     { $replaceRoot: { newRoot: '$doc' } },
     // Arbitrarily sort results to help avoid flaky tests
