@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { Document, MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
 
@@ -40,6 +40,31 @@ describe('Test user routes', () => {
       expect(res.status).toBe(200);
       const data = res.text.split('\n');
       expect(data).toMatchSnapshot();
+    });
+
+    it('should return all metadata with different projects but same branch names', async () => {
+      const res = await request(app).get('/user/beepboop-metadata/documents');
+      expect(res.status).toBe(200);
+      const data = res.text.split('\n');
+
+      const expectedBranchName = 'test-same-branch';
+      const projects: string[] = [];
+      let numSameBranch = 0;
+      // Check for metadata documents of the expected branch name and ensure there
+      // are different projects
+      data.forEach((doc) => {
+        const parsedData: Document = JSON.parse(doc);
+        if (parsedData['type'] === 'metadata' && parsedData['data']['branch'] === expectedBranchName) {
+          numSameBranch++;
+          projects.push(parsedData['data']['project']);
+        }
+      });
+
+      expect(numSameBranch).toBeGreaterThan(1);
+      const uniqueProjects = new Set(projects);
+      // Since we return only 1 unique project + branch + user combination, there
+      // should only be 1 of each project found here. A duplicate is not desired.
+      expect(projects.length).toEqual(uniqueProjects.size);
     });
   });
 });
