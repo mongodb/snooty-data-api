@@ -135,17 +135,19 @@ export const findLatestMetadataByProperty = (filter: Filter<Document>, req: Requ
   }
 
   const aggregationStages = [
-    // Look for all metadata documents of the same project
+    // Look for all metadata documents that match the filter
     { $match: filter },
     // Sort them so that most recent documents are first
     { $sort: { created_at: -1 } },
-    // Group documents by their branch, and only embed the first doc seen
-    // (or most recent, based on sorting stage)
-    { $group: { _id: '$branch', doc: { $first: '$$ROOT' } } },
+    // Group documents by unique project + branch + user combination, and only
+    // embed the first doc seen (or most recent, based on sorting stage)
+    {
+      $group: { _id: { project: '$project', branch: '$branch', user: '$github_username' }, doc: { $first: '$$ROOT' } },
+    },
     // Un-embed the doc from each group
     { $replaceRoot: { newRoot: '$doc' } },
     // Arbitrarily sort results to help avoid flaky tests
-    { $sort: { created_at: -1 } },
+    { $sort: { _id: -1 } },
   ];
   return getDb(req).collection(METADATA_COLLECTION).aggregate(aggregationStages);
 };
