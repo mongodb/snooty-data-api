@@ -62,6 +62,5 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   app.use(errorHandler);
   app.disable('x-powered-by');
 
-
   return app;
 };
