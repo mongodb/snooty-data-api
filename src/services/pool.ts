@@ -17,6 +17,7 @@ interface BranchEntry {
   active: boolean;
   urlAliases: string[];
   isStableBranch: boolean;
+  versionSelectorLabel: string;
   [key: string]: any;
 }
 
@@ -107,6 +108,7 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
     gitBranchName: branchEntry.gitBranchName,
     active: branchEntry.active,
     fullUrl: getBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
+    label: branchEntry.versionSelectorLabel,
     isStableBranch: !!branchEntry.isStableBranch,
   }));
 };
