@@ -60,6 +60,7 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   app.use('/prod/builds', buildsRouter);
   app.use('/prod/projects', projectsRouter);
   app.use(errorHandler);
+  app.disable('x-powered-by');
 
   return app;
 };
