@@ -60,6 +60,10 @@ If there are errors flagged through `prettier`, use:
 npm run format:fix
 ```
 
+## Releasing
+
+To release a new version of the data API to production, tag a new version from the [Releases page](https://github.com/mongodb/snooty-data-api/releases). That tag will then be promoted to prod.
+
 ## Endpoints
 
 The following are the base URLs for the Snooty Data API:
