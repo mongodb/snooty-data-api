@@ -61,7 +61,7 @@ export const initPoolDb = (client: MongoClient) => {
   return db;
 };
 
-export const findAllRepos = async (options: FindOptions = {}, isProd: boolean, reqId?: string) => {
+export const findAllRepos = async (options: FindOptions = {}, reqId?: string) => {
   try {
     const defaultSort: FindOptions = {
       sort: { repoName: 1 },
