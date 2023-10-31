@@ -28,6 +28,8 @@ name: staging-build
 trigger:
   branch:
   - main
+  # Temporary branch for testing error logging
+  - test-errors
   event:
   - push
 
