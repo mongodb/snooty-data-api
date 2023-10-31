@@ -60,7 +60,6 @@ const streamPages = async (
   const { updatedAssetsOnly, reqTimestamp, reqId } = opts;
   const pagesStream = pagesCursor.stream({
     transform(doc: PageDocType) {
-      throw new Error('Uh-oh. Spaghetti-Os');
       // Grab static assets for each page. 1 static asset can be used on more than
       // 1 page. Due to legacy considerations, 1 image can also be referred by more
       // than 1 filename. This is suboptimal and should be changed in the future
