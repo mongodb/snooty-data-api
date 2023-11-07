@@ -101,23 +101,6 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
   }
 };
 
-export const findAllDocsets = async (options: FindOptions = {}, reqId?: string) => {
-  try {
-    const defaultSort: FindOptions = {
-      sort: {},
-    };
-    const strictOptions: FindOptions = {
-      projection: {},
-    };
-    const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    const query: Filter<DocsetDocument> = { internalOnly: true };
-    return db.collection<DocsetDocument>(DOCSETS_COLLECTION).find(query, findOptions).map(mapDocsets).toArray();
-  } catch (e) {
-    logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
-    throw e;
-  }
-};
-
 /** repo_branches Documents formatting utils */
 
 const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(baseUrl) + assertTrailingSlash(prefix);
@@ -154,31 +137,21 @@ const mapRepos = async (repo: RepoDocument) => {
       },
     };
 
-    const repo_docset = await db
-      .collection<DocsetDocument>(DOCSETS_COLLECTION)
-      .find(query, strictOptions)
-      .map(mapDocsets)
-      .toArray();
+    // what does this return if there's nothing to find? test this out
+    const repoDocset = await db.collection<DocsetDocument>(DOCSETS_COLLECTION).findOne(query, strictOptions);
+
+    const branches = repoDocset
+      ? mapBranches(repo.branches, getRepoUrl(repoDocset.url[ENV_URL_KEY], repoDocset.prefix[ENV_URL_KEY]))
+      : [];
 
     return {
       repoName: repo.repoName,
       project: repo.project,
       search: repo.search,
-      branches: mapBranches(
-        repo.branches,
-        getRepoUrl(repo_docset[0].url[ENV_URL_KEY], repo_docset[0].prefix[ENV_URL_KEY])
-      ),
+      branches: branches,
     };
   } catch (e) {
     logger.error(createMessage(`Error while finding docsets: ${e}`));
     throw e;
   }
-};
-
-const mapDocsets = (docset: DocsetDocument) => {
-  return {
-    project: docset.project,
-    url: docset.url,
-    prefix: docset.prefix,
-  };
 };
