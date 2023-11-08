@@ -1,4 +1,4 @@
-import { Db, Filter, FindOptions, MongoClient, WithId } from 'mongodb';
+import { Db, FindOptions, MongoClient, WithId, ObjectId } from 'mongodb';
 import { createMessage, initiateLogger } from './logger';
 import { assertTrailingSlash } from '../utils';
 
@@ -30,6 +30,25 @@ interface RepoDocument extends WithId<Document> {
   search: Record<string, string>;
 }
 
+interface EnvKeyedURL {
+  regression: string;
+  dev: string;
+  prd: string;
+  stg: string;
+  dotcomstg: string;
+  dotcomprd: string;
+}
+
+interface DocsetDocument extends WithId<Document> {
+  project: string;
+  prefix: EnvKeyedObject;
+  url: EnvKeyedURL;
+  repos: ObjectId[];
+}
+
+interface DocsetRepoDocument extends RepoDocument {
+  docset: DocsetDocument[];
+}
 export interface BranchResponse {
   gitBranchName: string;
   active: boolean;
@@ -46,6 +65,7 @@ export interface RepoResponse {
 
 /** END typing for DB */
 
+const DOCSETS_COLLECTION = 'docsets';
 const REPOS_COLLECTION = 'repos_branches';
 const DB_NAME = process.env.POOL_DB_NAME ?? 'pool';
 const ENV_URL_KEY = (process.env.SNOOTY_ENV ?? 'dotcomprd') as keyof EnvKeyedObject;
@@ -76,8 +96,22 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
       },
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    const query: Filter<RepoDocument> = { internalOnly: false };
-    return db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
+    const pipeline = [
+      { $match: { internalOnly: false } },
+      {
+        $lookup: {
+          from: DOCSETS_COLLECTION,
+          localField: 'project',
+          foreignField: 'project',
+          as: 'docset',
+        },
+      },
+    ];
+    const cursor = await db.collection(REPOS_COLLECTION).aggregate(pipeline, findOptions);
+    const res = await cursor.toArray();
+    return res.map((element) => {
+      return mapDocsetRepo(<DocsetRepoDocument>element);
+    });
   } catch (e) {
     logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
     throw e;
@@ -109,9 +143,15 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
   }));
 };
 
-const mapRepos = (repo: RepoDocument): RepoResponse => ({
-  repoName: repo.repoName,
-  project: repo.project,
-  search: repo.search,
-  branches: mapBranches(repo.branches, getRepoUrl(repo.url[ENV_URL_KEY], repo.prefix[ENV_URL_KEY])),
-});
+const mapDocsetRepo = (docsetRepo: DocsetRepoDocument): RepoResponse => {
+  const docset = docsetRepo.docset ? docsetRepo.docset[0] : null;
+  const branches = docset
+    ? mapBranches(docsetRepo.branches, getRepoUrl(docset.url[ENV_URL_KEY], docset.prefix[ENV_URL_KEY]))
+    : [];
+  return {
+    repoName: docsetRepo.repoName,
+    project: docsetRepo.project,
+    search: docsetRepo.search,
+    branches: branches,
+  };
+};

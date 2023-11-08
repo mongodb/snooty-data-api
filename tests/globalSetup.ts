@@ -4,6 +4,7 @@ import { samplePageDocuments } from './sampleData/documents';
 import { sampleUpdatedPageDocuments } from './sampleData/updatedDocuments';
 import { sampleMetadata } from './sampleData/metadata';
 import { sampleReposBranches } from './sampleData/reposBranches';
+import { sampleDocsets } from './sampleData/docsets';
 import sampleAssets from './sampleData/assets.json';
 
 const loadSampleDataInCollection = async (db: Db, documents: any, collectionName: string) => {
@@ -21,6 +22,7 @@ const loadData = async () => {
   await loadSampleDataInCollection(db, sampleMetadata, 'metadata');
   await loadSampleDataInCollection(db, sampleAssets, 'assets');
   await loadSampleDataInCollection(poolDB, sampleReposBranches, 'repos_branches');
+  await loadSampleDataInCollection(poolDB, sampleDocsets, 'docsets');
 
   await client.close();
 };
