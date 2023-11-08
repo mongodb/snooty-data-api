@@ -83,6 +83,19 @@ export const initPoolDb = (client: MongoClient) => {
 
 export const findAllRepos = async (options: FindOptions = {}, reqId?: string) => {
   try {
+    const defaultSort: FindOptions = {
+      sort: { repoName: 1 },
+    };
+    const strictOptions: FindOptions = {
+      projection: {
+        repoName: 1,
+        project: 1,
+        branches: 1,
+        url: 1,
+        prefix: 1,
+      },
+    };
+    const findOptions = { ...defaultSort, ...options, ...strictOptions };
     const pipeline = [
       { $match: { internalOnly: false } },
       {
@@ -94,7 +107,7 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
         },
       },
     ];
-    const cursor = await db.collection(REPOS_COLLECTION).aggregate(pipeline);
+    const cursor = await db.collection(REPOS_COLLECTION).aggregate(pipeline, findOptions);
     const res = await cursor.toArray();
     return res.map((element) => {
       return mapDocsetRepo(<DocsetRepoDocument>element);
