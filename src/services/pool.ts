@@ -130,7 +130,7 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
   }));
 };
 
-const mapDocsetRepo = (docsetRepo: DocsetRepoDocument) => {
+const mapDocsetRepo = (docsetRepo: DocsetRepoDocument): RepoResponse => {
   const docset = docsetRepo.docset ? docsetRepo.docset[0] : null;
   const branches = docset
     ? mapBranches(docsetRepo.branches, getRepoUrl(docset.url[ENV_URL_KEY], docset.prefix[ENV_URL_KEY]))
