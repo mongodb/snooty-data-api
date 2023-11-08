@@ -46,6 +46,9 @@ interface DocsetDocument extends WithId<Document> {
   repos: ObjectId[];
 }
 
+interface DocsetRepoDocument extends RepoDocument {
+  docset: DocsetDocument[];
+}
 export interface BranchResponse {
   gitBranchName: string;
   active: boolean;
@@ -80,21 +83,22 @@ export const initPoolDb = (client: MongoClient) => {
 
 export const findAllRepos = async (options: FindOptions = {}, reqId?: string) => {
   try {
-    const defaultSort: FindOptions = {
-      sort: { repoName: 1 },
-    };
-    const strictOptions: FindOptions = {
-      projection: {
-        repoName: 1,
-        project: 1,
-        branches: 1,
-        url: 1,
-        prefix: 1,
+    const pipeline = [
+      { $match: { internalOnly: false } },
+      {
+        $lookup: {
+          from: DOCSETS_COLLECTION,
+          localField: 'project',
+          foreignField: 'project',
+          as: 'docset',
+        },
       },
-    };
-    const findOptions = { ...defaultSort, ...options, ...strictOptions };
-    const query: Filter<RepoDocument> = { internalOnly: false };
-    return db.collection<RepoDocument>(REPOS_COLLECTION).find(query, findOptions).map(mapRepos).toArray();
+    ];
+    const cursor = await db.collection(REPOS_COLLECTION).aggregate(pipeline);
+    const res = await cursor.toArray();
+    return res.map((element) => {
+      return mapDocsetRepo(<DocsetRepoDocument>element);
+    });
   } catch (e) {
     logger.error(createMessage(`Error while finding all repos: ${e}`, reqId));
     throw e;
@@ -126,32 +130,15 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
   }));
 };
 
-const mapRepos = async (repo: RepoDocument) => {
-  try {
-    const query: Filter<DocsetDocument> = { project: repo.project };
-    const strictOptions: FindOptions = {
-      projection: {
-        project: 1,
-        url: 1,
-        prefix: 1,
-      },
-    };
-
-    // what does this return if there's nothing to find? test this out
-    const repoDocset = await db.collection<DocsetDocument>(DOCSETS_COLLECTION).findOne(query, strictOptions);
-
-    const branches = repoDocset
-      ? mapBranches(repo.branches, getRepoUrl(repoDocset.url[ENV_URL_KEY], repoDocset.prefix[ENV_URL_KEY]))
-      : [];
-
-    return {
-      repoName: repo.repoName,
-      project: repo.project,
-      search: repo.search,
-      branches: branches,
-    };
-  } catch (e) {
-    logger.error(createMessage(`Error while finding docsets: ${e}`));
-    throw e;
-  }
+const mapDocsetRepo = (docsetRepo: DocsetRepoDocument) => {
+  const docset = docsetRepo.docset ? docsetRepo.docset[0] : null;
+  const branches = docset
+    ? mapBranches(docsetRepo.branches, getRepoUrl(docset.url[ENV_URL_KEY], docset.prefix[ENV_URL_KEY]))
+    : [];
+  return {
+    repoName: docsetRepo.repoName,
+    project: docsetRepo.project,
+    search: docsetRepo.search,
+    branches: branches,
+  };
 };
