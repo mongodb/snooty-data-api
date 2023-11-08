@@ -1,4 +1,4 @@
-import { Db, Filter, FindOptions, MongoClient, WithId, ObjectId } from 'mongodb';
+import { Db, FindOptions, MongoClient, WithId, ObjectId } from 'mongodb';
 import { createMessage, initiateLogger } from './logger';
 import { assertTrailingSlash } from '../utils';
 
