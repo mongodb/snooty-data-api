@@ -1,10 +1,11 @@
 import { MongoClient } from 'mongodb';
 import { createMessage, initiateLogger } from './logger';
 
+const APP_NAME = 'snooty-data-api';
 const ATLAS_URI = process.env.ATLAS_URI ?? '';
 const logger = initiateLogger();
 
-const client = new MongoClient(ATLAS_URI);
+const client = new MongoClient(ATLAS_URI, { appName: APP_NAME });
 
 export const connect = async () => {
   try {
