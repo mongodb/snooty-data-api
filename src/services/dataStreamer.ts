@@ -14,6 +14,7 @@ export interface StreamData {
 }
 
 const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, req: Request, reqId?: string) => {
+  logger.info(createMessage('Attempting to stream assets', reqId));
   const checksums = Object.keys(assetData);
   if (!checksums.length) {
     pipeline.end();
@@ -80,6 +81,12 @@ const streamPages = async (
       pageCount++;
       return newDoc;
     },
+  });
+
+  req.on('close', () => {
+    logger.info(createMessage(`Request closed`, reqId));
+    pagesCursor.close();
+    logger.info(createMessage(`Cursor closed: ${pagesCursor.closed}`, reqId));
   });
 
   pagesStream.pipe(pipeline, { end: false });
