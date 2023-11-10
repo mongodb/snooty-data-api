@@ -87,6 +87,8 @@ const streamPages = async (
     logger.info(createMessage(`Request closed`, reqId));
     pagesCursor.close();
     logger.info(createMessage(`Cursor closed: ${pagesCursor.closed}`, reqId));
+    pagesStream.emit('end');
+    pipeline.end();
   });
 
   pagesStream.pipe(pipeline, { end: false });
