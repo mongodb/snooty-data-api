@@ -93,7 +93,9 @@ const streamPages = async (
   pagesStream.once('end', async () => {
     logger.info(createMessage(`Found ${pageCount} pages`, reqId));
     try {
-      await streamAssets(pipeline, assetData, req, reqId);
+      if (!req.closed) {
+        await streamAssets(pipeline, assetData, req, reqId);
+      }
     } catch (err) {
       logger.error(createMessage(`Error trying to stream assets: ${err}`));
       pipeline.end();
