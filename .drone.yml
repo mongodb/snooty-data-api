@@ -28,6 +28,7 @@ name: staging-build
 trigger:
   branch:
   - main
+  - test-max-memory
   event:
   - push
 
