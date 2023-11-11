@@ -1,8 +1,9 @@
 import { AbstractCursor, Document, FindCursor } from 'mongodb';
 import { Request, Response } from 'express';
+import { Readable } from 'stream'
 import { chain } from 'stream-chain';
 import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
-import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
+import { AssetDocument, PageDocType, StaticAsset, findAssetsByChecksums } from './database';
 import { createMessage, initiateLogger } from './logger';
 import { DataStreamOptions } from '../types';
 
@@ -111,6 +112,255 @@ const isUpdated = (previousTime?: number, newTime?: Date) => {
   if (!previousTime || !newTime) return false;
   return newTime.getTime() > previousTime;
 };
+
+interface DocumentData {
+  cursor: AbstractCursor;
+  transform: (doc: Document) => Document;
+  type: string;
+}
+
+export class DataStreamer {
+  res: Response;
+  documentData: DocumentData[] = [];
+  options: DataStreamOptions;
+  req: Request;
+  pipeline: Duplex;
+  assetData: Record<string, Set<string>> = {};
+
+  metadataCursor: AbstractCursor<Document>;
+  pagesCursor: FindCursor<PageDocType>;
+
+  streams: (Readable & AsyncIterable<Document>)[] = [];
+  cursors: AbstractCursor[];
+
+  isStreaming: boolean = true;
+  currentStream: (Readable & AsyncIterable<Document>) | null = null;
+
+  constructor(
+    res: Response,
+    pagesCursor: FindCursor<PageDocType>,
+    metadataCursor: AbstractCursor<Document>,
+    opts: DataStreamOptions = {},
+    req: Request
+  ) {
+    this.res = res;
+    // this.documentData = [
+    //   { cursor: metadataCursor, transform: this.metadataTransform, type: 'metadata' },
+    //   { cursor: pagesCursor, transform: this.pageTransform, type: 'pages' },
+    // ];
+    this.metadataCursor = metadataCursor;
+    this.pagesCursor = pagesCursor;
+    this.options = opts;
+    this.req = req;
+
+    this.pipeline = chain([stringer(), res]);
+    this.req.on('close', () => {
+      if (this.currentStream && !this.currentStream.closed) {
+        this.currentStream.emit('end');
+        // Prevent other streams from starting
+        this.isStreaming = false;
+      }
+    });
+
+    this.cursors = [metadataCursor, pagesCursor];
+  }
+
+  cleanup() {
+    this.currentStream = null;
+    this.isStreaming = false;
+
+    for (const stream of this.streams) {
+      if (!stream.closed) {
+        // stream.emit('close');
+        stream.emit('end');
+        console.log('Closed stream!!!');
+      }
+    }
+
+    for (const cursor of this.cursors) {
+      if (!cursor.closed) {
+        cursor.close().then(() => {
+          console.log('Closed cursor!!!');
+        });
+      }
+    }
+  }
+
+  async stream() {
+    this.streamTimestamp();
+    await this.streamMetadata();
+    await this.streamPages();
+    await this.streamAssets();
+
+    // Manually end pipeline to end stream
+    this.pipeline.end();
+    this.cleanup();
+  }
+
+  // Return timestamp to inform Gatsby Cloud when data was last queried
+  streamTimestamp() {
+    const timestamp = Date.now();
+    const timestampChunk: StreamData = { type: 'timestamp', data: timestamp };
+    logger.info(createMessage(`Returning timestamp: ${timestamp}`, this.options.reqId));
+    this.pipeline.write(timestampChunk);
+  }
+
+  async streamMetadata() {
+    if (!this.isStreaming) {
+      console.log('Dont stream metadata')
+      if (!this.metadataCursor.closed) {
+        this.metadataCursor.close();
+      }
+      return;
+    }
+
+    const dataType = 'metadata';
+    let count = 0;
+
+    const stream = this.metadataCursor.stream({
+      transform: (doc: Document) => {
+        const newDoc: StreamData = {
+          type: dataType,
+          data: doc,
+        };
+        count++;
+        return newDoc;
+      },
+    });
+
+    await this.handleStream(stream, this.metadataCursor, dataType)
+    this.logDataCount(dataType, count);
+  }
+
+  async streamPages() {
+    if (!this.isStreaming) {
+      console.log('Dont stream pages')
+      if (!this.pagesCursor.closed) {
+        this.pagesCursor.close();
+      }
+      return;
+    }
+
+    const dataType = 'page';
+    let count = 0;
+
+    const transform = (doc: PageDocType) => {
+      doc.static_assets.forEach((staticAsset) => {this.addAsset(staticAsset)});
+      const newDoc: StreamData = {
+        type: dataType,
+        data: doc,
+      };
+      count++;
+      return newDoc;
+    }
+
+    const stream = this.pagesCursor.stream({
+      transform,
+    });
+
+    await this.handleStream(stream, this.pagesCursor, dataType);
+    this.logDataCount(dataType, count);
+  }
+
+  logDataCount(dataType: string, count: number) {
+    logger.info(createMessage(`Found ${dataType} count: ${count}`, this.options.reqId));
+  }
+
+  async streamAssets() {
+    if (!this.isStreaming) {
+      console.log('Dont stream assets')
+      return;
+    }
+
+    const dataType = 'asset';
+    let count = 0;
+
+    const checksums = Object.keys(this.assetData);
+    if (!checksums.length) {
+      this.logDataCount(dataType, count);
+      return;
+    }
+
+    const assetsCursor = findAssetsByChecksums(checksums, this.req);
+    this.cursors.push(assetsCursor);
+    
+    const stream = assetsCursor.stream({
+      transform: (doc: AssetDocument) => {
+        const checksum = doc._id;
+        const newDoc: StreamData = {
+          type: dataType,
+          data: {
+            checksum,
+            assetData: doc.data,
+            filenames: [...this.assetData[checksum]],
+          },
+        };
+        count++;
+        return newDoc;
+      },
+    });
+
+    await this.handleStream(stream, assetsCursor, dataType);
+    this.logDataCount(dataType, count);
+  }
+
+  // Grab static assets for each page. 1 static asset can be used on more than
+  // 1 page. Due to legacy considerations, 1 image can also be referred by more
+  // than 1 filename. This is suboptimal and should be changed in the future
+  addAsset({ checksum, key: filename, updated_at: updatedAt }: StaticAsset) {
+    // Skip to next asset if the asset has not been updated
+    if (this.options.updatedAssetsOnly && !isUpdated(this.options.reqTimestamp, updatedAt)) {
+      return;
+    }
+    if (!this.assetData[checksum]) {
+      this.assetData[checksum] = new Set();
+    }
+    this.assetData[checksum].add(filename);
+  }
+
+  createStreamErrorHandler(stream: Readable & AsyncIterable<Document>) {
+    stream.once('error', (err) => {
+      logger.error(createMessage(`There was an error streaming metadata: ${err}`, this.options.reqId));
+      stream.destroy();
+      this.pipeline.destroy();
+    });
+  }
+
+  async waitForStreamEnd(stream: Readable & AsyncIterable<Document>) {
+    await new Promise<void>((resolve, _) => {
+      stream.once('end', () => {
+        resolve();
+      });
+    });
+  }
+
+  async handleStream(stream: Readable & AsyncIterable<Document>, cursor: AbstractCursor, streamType: string) {
+    this.currentStream = stream;
+    // The DataStreamer class should be responsible for ending the pipeline
+    stream.pipe(this.pipeline, { end: false });
+    this.streams.push(stream);
+
+    stream.once('error', (err) => {
+      logger.error(createMessage(`There was an error streaming ${streamType}: ${err}`, this.options.reqId));
+      stream.destroy();
+      if (!cursor.closed) {
+        cursor.close();
+        console.log('Closing cursor');
+      }
+    });
+
+    // Wait for stream to end
+    await new Promise<void>((resolve, _) => {
+      stream.once('end', async () => {
+        if (!cursor.closed) {
+          await cursor.close();
+          console.log('Cursor closed');
+        }
+        resolve();
+      });
+    });
+  }
+}
 
 /**
  * Creates a pipeline from build artifacts to the Express Response. Documents are

@@ -1,7 +1,7 @@
 import { Db, Filter, MongoClient, ObjectId } from 'mongodb';
 import { Request } from 'express';
 
-interface StaticAsset {
+export interface StaticAsset {
   checksum: string;
   key: string;
   updated_at?: Date;
