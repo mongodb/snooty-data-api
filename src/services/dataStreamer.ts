@@ -178,13 +178,13 @@ export class DataStreamer {
     //   }
     // }
 
-    for (const cursor of this.cursors) {
-      if (!cursor.closed) {
-        cursor.close().then(() => {
-          logger.info(createMessage('Closed cursor!!!', this.options.reqId));
-        });
-      }
-    }
+    // for (const cursor of this.cursors) {
+    //   if (!cursor.closed) {
+    //     cursor.close().then(() => {
+    //       logger.info(createMessage('Closed cursor!!!', this.options.reqId));
+    //     });
+    //   }
+    // }
   }
 
   async stream() {
@@ -357,7 +357,11 @@ export class DataStreamer {
       stream.once('end', async () => {
         if (!cursor.closed) {
           logger.info(createMessage('About to close cursor', this.options.reqId));
-          await cursor.close();
+          try {
+            await cursor.close();
+          } catch (err) {
+            logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
+          }
           logger.info(createMessage('Cursor closed', this.options.reqId));
         }
         resolve();
