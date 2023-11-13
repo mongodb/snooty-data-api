@@ -210,7 +210,7 @@ export class DataStreamer {
     if (!this.isStreaming) {
       logger.info(createMessage('Dont stream metadata', this.options.reqId));
       if (!this.metadataCursor.closed) {
-        this.metadataCursor.close();
+        await this.metadataCursor.close();
       }
       return;
     }
@@ -238,7 +238,7 @@ export class DataStreamer {
       logger.info(createMessage('Dont stream pages', this.options.reqId));
 
       if (!this.pagesCursor.closed) {
-        this.pagesCursor.close();
+        await this.pagesCursor.close();
       }
       return;
     }
