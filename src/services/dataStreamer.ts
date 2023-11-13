@@ -178,13 +178,13 @@ export class DataStreamer {
     //   }
     // }
 
-    // for (const cursor of this.cursors) {
-    //   if (!cursor.closed) {
-    //     cursor.close().then(() => {
-    //       logger.info(createMessage('Closed cursor!!!', this.options.reqId));
-    //     });
-    //   }
-    // }
+    for (const cursor of this.cursors) {
+      if (!cursor.closed) {
+        cursor.close().then(() => {
+          logger.info(createMessage('Closed cursor!!!', this.options.reqId));
+        });
+      }
+    }
   }
 
   async stream() {
