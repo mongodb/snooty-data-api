@@ -209,9 +209,7 @@ export class DataStreamer {
   async streamMetadata() {
     if (!this.isStreaming) {
       logger.info(createMessage('Dont stream metadata', this.options.reqId));
-      if (!this.metadataCursor.closed) {
-        await this.metadataCursor.close();
-      }
+      await this.safelyCloseCursor(this.metadataCursor);
       return;
     }
 
@@ -236,10 +234,7 @@ export class DataStreamer {
   async streamPages() {
     if (!this.isStreaming) {
       logger.info(createMessage('Dont stream pages', this.options.reqId));
-
-      if (!this.pagesCursor.closed) {
-        await this.pagesCursor.close();
-      }
+      await this.safelyCloseCursor(this.pagesCursor);
       return;
     }
 
@@ -345,28 +340,30 @@ export class DataStreamer {
     stream.once('error', async (err) => {
       logger.error(createMessage(`There was an error streaming ${streamType}: ${err}`, this.options.reqId));
       stream.destroy();
-      if (!cursor.closed) {
-        logger.info(createMessage('Closing cursor', this.options.reqId));
-        await cursor.close();
-        logger.info(createMessage('Closed cursor', this.options.reqId));
-      }
+      await this.safelyCloseCursor(cursor);
     });
 
     // Wait for stream to end
     await new Promise<void>((resolve, _) => {
       stream.once('end', async () => {
-        if (!cursor.closed) {
-          logger.info(createMessage('About to close cursor', this.options.reqId));
-          try {
-            await cursor.close();
-          } catch (err) {
-            logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
-          }
-          logger.info(createMessage('Cursor closed', this.options.reqId));
-        }
+        await this.safelyCloseCursor(cursor);
         resolve();
       });
     });
+  }
+
+  async safelyCloseCursor(cursor: AbstractCursor) {
+    if (cursor.closed) {
+      return;
+    }
+
+    try {
+      logger.info(createMessage('Manually closing cursor', this.options.reqId));
+      await cursor.close();
+      logger.info(createMessage('Cursor closed', this.options.reqId));
+    } catch (err) {
+      logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
+    }
   }
 }
 
