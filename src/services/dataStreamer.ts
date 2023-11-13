@@ -156,7 +156,7 @@ export class DataStreamer {
     this.pipeline = chain([stringer(), res]);
     this.req.once('close', () => {
       if (this.currentStream && !this.currentStream.closed) {
-        this.currentStream.emit('end');
+        // this.currentStream.emit('end');
         this.currentStream.destroy();
         // Prevent other streams from starting
         this.isStreaming = false;
@@ -170,21 +170,24 @@ export class DataStreamer {
     this.currentStream = null;
     this.isStreaming = false;
 
-    // for (const stream of this.streams) {
-    //   if (!stream.closed) {
-    //     // stream.emit('close');
-    //     stream.emit('end');
-    //     logger.info(createMessage('Closed stream!!!', this.options.reqId));
-    //   }
-    // }
+    for (const stream of this.streams) {
+      if (!stream.destroyed) {
+        stream.destroy();
+        // stream.emit('close');
+        // stream.emit('end');
+        logger.info(createMessage('Closed stream!!!', this.options.reqId));
+      }
+    }
 
-    // for (const cursor of this.cursors) {
-    //   if (!cursor.closed) {
-    //     cursor.close().then(() => {
-    //       logger.info(createMessage('Closed cursor!!!', this.options.reqId));
-    //     });
-    //   }
-    // }
+    for (const cursor of this.cursors) {
+      if (!cursor.closed) {
+        cursor.close().then(() => {
+          logger.info(createMessage('Closed cursor!!!', this.options.reqId));
+        }).catch((err) => { 
+          logger.error(createMessage(`Error closing cursor: ${err}`, this.options.reqId));
+        });
+      }
+    }
   }
 
   async stream() {
@@ -340,31 +343,30 @@ export class DataStreamer {
     stream.once('error', async (err) => {
       logger.error(createMessage(`There was an error streaming ${streamType}: ${err}`, this.options.reqId));
       stream.destroy();
-      await this.safelyCloseCursor(cursor);
+      // await this.safelyCloseCursor(cursor);
     });
 
     // Wait for stream to end
     await new Promise<void>((resolve, _) => {
       stream.once('end', async () => {
-        await this.safelyCloseCursor(cursor);
+        // await this.safelyCloseCursor(cursor);
         resolve();
       });
     });
   }
 
   async safelyCloseCursor(cursor: AbstractCursor) {
-    return;
-    // if (cursor.closed) {
-    //   return;
-    // }
+    if (cursor.closed) {
+      return;
+    }
 
-    // try {
-    //   logger.info(createMessage('Manually closing cursor', this.options.reqId));
-    //   await cursor.close();
-    //   logger.info(createMessage('Cursor closed', this.options.reqId));
-    // } catch (err) {
-    //   logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
-    // }
+    try {
+      logger.info(createMessage('Manually closing cursor', this.options.reqId));
+      await cursor.close();
+      logger.info(createMessage('Cursor closed', this.options.reqId));
+    } catch (err) {
+      logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
+    }
   }
 }
 
