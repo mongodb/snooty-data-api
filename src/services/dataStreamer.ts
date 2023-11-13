@@ -173,14 +173,14 @@ export class DataStreamer {
     //   if (!stream.closed) {
     //     // stream.emit('close');
     //     stream.emit('end');
-    //     logger.debug(createMessage('Closed stream!!!', this.options.reqId));
+    //     logger.info(createMessage('Closed stream!!!', this.options.reqId));
     //   }
     // }
 
     // for (const cursor of this.cursors) {
     //   if (!cursor.closed) {
     //     cursor.close().then(() => {
-    //       logger.debug(createMessage('Closed cursor!!!', this.options.reqId));
+    //       logger.info(createMessage('Closed cursor!!!', this.options.reqId));
     //     });
     //   }
     // }
@@ -207,7 +207,7 @@ export class DataStreamer {
 
   async streamMetadata() {
     if (!this.isStreaming) {
-      logger.debug(createMessage('Dont stream metadata', this.options.reqId));
+      logger.info(createMessage('Dont stream metadata', this.options.reqId));
       if (!this.metadataCursor.closed) {
         this.metadataCursor.close();
       }
@@ -234,7 +234,7 @@ export class DataStreamer {
 
   async streamPages() {
     if (!this.isStreaming) {
-      logger.debug(createMessage('Dont stream pages', this.options.reqId));
+      logger.info(createMessage('Dont stream pages', this.options.reqId));
 
       if (!this.pagesCursor.closed) {
         this.pagesCursor.close();
@@ -269,7 +269,7 @@ export class DataStreamer {
 
   async streamAssets() {
     if (!this.isStreaming) {
-      logger.debug(createMessage('Dont stream assets', this.options.reqId));
+      logger.info(createMessage('Dont stream assets', this.options.reqId));
       return;
     }
 
@@ -345,9 +345,9 @@ export class DataStreamer {
       logger.error(createMessage(`There was an error streaming ${streamType}: ${err}`, this.options.reqId));
       stream.destroy();
       if (!cursor.closed) {
-        logger.debug(createMessage('Closing cursor', this.options.reqId));
+        logger.info(createMessage('Closing cursor', this.options.reqId));
         await cursor.close();
-        logger.debug(createMessage('Closed cursor', this.options.reqId));
+        logger.info(createMessage('Closed cursor', this.options.reqId));
       }
     });
 
@@ -355,9 +355,9 @@ export class DataStreamer {
     await new Promise<void>((resolve, _) => {
       stream.once('end', async () => {
         if (!cursor.closed) {
-          logger.debug(createMessage('About to close cursor', this.options.reqId));
+          logger.info(createMessage('About to close cursor', this.options.reqId));
           await cursor.close();
-          logger.debug(createMessage('Cursor closed', this.options.reqId));
+          logger.info(createMessage('Cursor closed', this.options.reqId));
         }
         resolve();
       });
