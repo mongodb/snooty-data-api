@@ -21,4 +21,4 @@ resources:
     # Testing max
     memory: 5Gi
   requests:
-    memory: 1100Mi
+    memory: 3Gi
