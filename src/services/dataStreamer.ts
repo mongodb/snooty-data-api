@@ -169,21 +169,21 @@ export class DataStreamer {
     this.currentStream = null;
     this.isStreaming = false;
 
-    for (const stream of this.streams) {
-      if (!stream.closed) {
-        // stream.emit('close');
-        stream.emit('end');
-        logger.debug(createMessage('Closed stream!!!', this.options.reqId));
-      }
-    }
+    // for (const stream of this.streams) {
+    //   if (!stream.closed) {
+    //     // stream.emit('close');
+    //     stream.emit('end');
+    //     logger.debug(createMessage('Closed stream!!!', this.options.reqId));
+    //   }
+    // }
 
-    for (const cursor of this.cursors) {
-      if (!cursor.closed) {
-        cursor.close().then(() => {
-          logger.debug(createMessage('Closed cursor!!!', this.options.reqId));
-        });
-      }
-    }
+    // for (const cursor of this.cursors) {
+    //   if (!cursor.closed) {
+    //     cursor.close().then(() => {
+    //       logger.debug(createMessage('Closed cursor!!!', this.options.reqId));
+    //     });
+    //   }
+    // }
   }
 
   async stream() {
