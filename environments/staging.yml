@@ -19,6 +19,6 @@ ingress:
 resources:
   limits:
     # Testing max
-    memory: 12Gi
+    memory: 5Gi
   requests:
     memory: 1100Mi
