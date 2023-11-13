@@ -353,17 +353,18 @@ export class DataStreamer {
   }
 
   async safelyCloseCursor(cursor: AbstractCursor) {
-    if (cursor.closed) {
-      return;
-    }
+    return;
+    // if (cursor.closed) {
+    //   return;
+    // }
 
-    try {
-      logger.info(createMessage('Manually closing cursor', this.options.reqId));
-      await cursor.close();
-      logger.info(createMessage('Cursor closed', this.options.reqId));
-    } catch (err) {
-      logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
-    }
+    // try {
+    //   logger.info(createMessage('Manually closing cursor', this.options.reqId));
+    //   await cursor.close();
+    //   logger.info(createMessage('Cursor closed', this.options.reqId));
+    // } catch (err) {
+    //   logger.error(createMessage('There was an error trying to close cursor', this.options.reqId));
+    // }
   }
 }
 
