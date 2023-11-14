@@ -18,7 +18,7 @@ ingress:
 
 probes:
   enabled: true
-  path: /projects
+  path: /liveness
   headers: {}
   liveness:
     httpGet: true

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { MongoClient, ObjectId } from 'mongodb';
 // Configure dotenv early so env variables can be read in imported files
 dotenv.config();
+import livenessRouter from './routes/liveness';
 import buildsRouter from './routes/builds';
 import projectsRouter from './routes/projects';
 import userRouter from './routes/user';
@@ -54,6 +55,7 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
 
   const app = express();
   app.use(reqHandler);
+  app.use('/liveness', livenessRouter);
   app.use('/builds', buildsRouter);
   app.use('/projects', projectsRouter);
   app.use('/user', userRouter);
