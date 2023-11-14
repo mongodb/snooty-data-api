@@ -155,7 +155,7 @@ export class DataStreamer {
 
     this.pipeline = chain([stringer(), res]);
     this.req.once('close', () => {
-      if (this.currentStream && !this.currentStream.closed) {
+      if (this.currentStream && !this.currentStream.destroyed) {
         // this.currentStream.emit('end');
         this.currentStream.destroy();
         // Prevent other streams from starting
