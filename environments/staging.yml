@@ -3,13 +3,15 @@ service:
 
 env:
   PORT: 3000
-  SNOOTY_DB_NAME: snooty_stage
-  SNOOTY_PROD_DB_NAME: snooty_dotcomstg
-  POOL_DB_NAME: pool_test
-  SNOOTY_ENV: dotcomstg
+  # TODO-4117: Change back to staging values
+  SNOOTY_DB_NAME: snooty_prod
+  SNOOTY_PROD_DB_NAME: snooty_dotcomprd
+  POOL_DB_NAME: pool
+  SNOOTY_ENV: dotcomprd
 
 envSecrets:
-  ATLAS_URI: snooty-data-api-staging
+  # TODO-4117: Change back to staging
+  ATLAS_URI: snooty-data-api
 
 ingress:
   enabled: true
@@ -21,3 +23,14 @@ resources:
     memory: 1300Mi
   requests:
     memory: 1100Mi
+
+autoscaling:
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 50
