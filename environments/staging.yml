@@ -26,21 +26,20 @@ resources:
 
 autoscaling:
   apiVersion: autoscaling/v2
-  spec:
-    minReplicas: 2
-    maxReplicas: 5
-    metrics:
-      - type: Resource
-        resource:
-          name: memory
-          target:
-            type: Utilization
-            averageUtilization: 60
-    behavior:
-      scaleUp:
-        stabilizationWindowSeconds: 0 # scaleUp immediately if conditions met
-        policies:
-          # 100% of the currently running replicas may at most be added every 60s
-          - type: Percent
-            value: 100
-            periodSeconds: 60
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0 # scaleUp immediately if conditions met
+      policies:
+        # 100% of the currently running replicas may at most be added every 60s
+        - type: Percent
+          value: 100
+          periodSeconds: 60
