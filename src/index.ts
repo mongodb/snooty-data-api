@@ -32,7 +32,7 @@ const signalHandler = async (signal: string) => {
   server.close();
 };
 
-const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT', 'SIGKILL'];
+const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT'];
 signals.forEach((signal) => {
   process.on(signal, signalHandler);
 });
