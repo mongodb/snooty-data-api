@@ -24,25 +24,25 @@ resources:
   requests:
     memory: 1100Mi
 
-probes:
-  enabled: true
-  path: /liveness
-  headers: {}
-  liveness:
-    httpGet: true
-    initialDelaySeconds: 10
-    periodSeconds: 60
-    timeoutSeconds: 1
-    successThreshold: 1
-    failureThreshold: 3
-  # Determines when the pod is ready to receive traffic
-  readiness:
-    initialDelaySeconds: 5
-    # Check every 10 seconds on startup
-    periodSeconds: 10
-    timeoutSeconds: 1
-    successThreshold: 1
-    failureThreshold: 3
+# probes:
+#   enabled: true
+#   path: /liveness
+#   headers: {}
+#   liveness:
+#     httpGet: true
+#     initialDelaySeconds: 10
+#     periodSeconds: 60
+#     timeoutSeconds: 1
+#     successThreshold: 1
+#     failureThreshold: 3
+#   # Determines when the pod is ready to receive traffic
+#   readiness:
+#     initialDelaySeconds: 5
+#     # Check every 10 seconds on startup
+#     periodSeconds: 10
+#     timeoutSeconds: 1
+#     successThreshold: 1
+#     failureThreshold: 3
 
 autoscaling:
   apiVersion: autoscaling/v2
