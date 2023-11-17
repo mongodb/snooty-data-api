@@ -54,11 +54,8 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   }
 
   const app = express();
-  // Keep away from other endpoints since reqHandler would just spam logs for liveness
-  app.use('/liveness', livenessRouter);
-
-  // The following routes will be preceded by the reqHandler
   app.use(reqHandler);
+  app.use('/liveness', livenessRouter);
   app.use('/builds', buildsRouter);
   app.use('/projects', projectsRouter);
   app.use('/user', userRouter);
