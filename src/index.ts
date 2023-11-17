@@ -19,6 +19,10 @@ const startServer = async () => {
   server.on('error', (err) => {
     logger.error(`Server encountered the following error: ${err}`);
   });
+
+  server.on('close', () => {
+    logger.info('Server closed.');
+  });
 };
 
 startServer().catch((e) => {
