@@ -34,12 +34,11 @@ probes:
     periodSeconds: 60
     timeoutSeconds: 1
     successThreshold: 1
-    failureThreshold: 3
+    failureThreshold: 5
   # Determines when the pod is ready to receive traffic
   readiness:
-    initialDelaySeconds: 5
-    # Check every 10 seconds on startup
-    periodSeconds: 10
+    initialDelaySeconds: 10
+    periodSeconds: 30
     timeoutSeconds: 1
     successThreshold: 1
     failureThreshold: 3
