@@ -15,6 +15,10 @@ const startServer = async () => {
   server = app.listen(PORT, () => {
     logger.info(`Server listening on port: ${PORT}`);
   });
+
+  server.on('error', (err) => {
+    logger.error(`Server encountered the following error: ${err}`);
+  });
 };
 
 startServer().catch((e) => {
@@ -28,6 +32,7 @@ const signalHandler = async (signal: string) => {
   server.close();
 };
 
-process.on('SIGINT', signalHandler);
-process.on('SIGTERM', signalHandler);
-process.on('SIGQUIT', signalHandler);
+const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT', 'SIGKILL'];
+signals.forEach((signal) => {
+  process.on(signal, signalHandler);
+});
