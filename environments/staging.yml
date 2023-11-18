@@ -31,10 +31,13 @@ probes:
   liveness:
     httpGet: true
     initialDelaySeconds: 10
-    periodSeconds: 60
+    periodSeconds: 30
+    # Ideally, timeout would be lower, but this prevents any latency during memory spikes
     timeoutSeconds: 10
     successThreshold: 1
-    failureThreshold: 10
+    # Keeping failureThreshold for liveness higher than readiness to ensure
+    # pod stays up even if it's not ready
+    failureThreshold: 6
   # Determines when the pod is ready to receive traffic
   readiness:
     httpGet: true
