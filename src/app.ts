@@ -54,13 +54,16 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   }
 
   const app = express();
+
+  // Keep this above the reqHandler since logs for this probe might result in spam
+  app.use('/liveness', livenessRouter);
+
   app.use(reqHandler);
   app.use('/builds', buildsRouter);
   app.use('/projects', projectsRouter);
   app.use('/user', userRouter);
   app.use('/prod/builds', buildsRouter);
   app.use('/prod/projects', projectsRouter);
-  app.use('/liveness', livenessRouter);
   app.use(errorHandler);
   app.disable('x-powered-by');
 

@@ -21,7 +21,7 @@ const startServer = async () => {
   });
 
   server.on('close', () => {
-    logger.info('Server closed.');
+    logger.info('Server closed');
   });
 };
 

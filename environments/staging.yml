@@ -37,6 +37,7 @@ probes:
     failureThreshold: 10
   # Determines when the pod is ready to receive traffic
   readiness:
+    httpGet: true
     initialDelaySeconds: 10
     periodSeconds: 30
     timeoutSeconds: 10
