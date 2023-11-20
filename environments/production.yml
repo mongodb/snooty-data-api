@@ -16,8 +16,56 @@ ingress:
   hosts:
     - snooty-data-api.docs.prod.corp.mongodb.com
 
+# Current limits and requests are based around metrics during expected peaks
 resources:
   limits:
-    memory: 1300Mi
+    memory: 2Gi
   requests:
     memory: 1100Mi
+
+# The current probes are pretty lenient to avoid prematurely shutting down
+# pods during mass fetches. They should be adjusted accordingly in the future
+probes:
+  enabled: true
+  path: /liveness
+  headers: {}
+  # Determines if the pod is still alive. The pod will shut down if this fails.
+  liveness:
+    httpGet: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    # Ideally, timeout would be lower, but this prevents any latency during memory spikes
+    timeoutSeconds: 10
+    successThreshold: 1
+    # Keeping failureThreshold for liveness higher than readiness to ensure
+    # pod stays up even if it's not ready
+    failureThreshold: 6
+  # Determines when the pod is ready to receive traffic. This may help with ensuring that requests
+  # don't disappear into the void when routed to a new pod that isn't ready yet
+  readiness:
+    httpGet: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+
+autoscaling:
+  apiVersion: autoscaling/v2
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0 # scaleUp immediately if conditions met
+      policies:
+        # 100% of the currently running replicas may at most be added every 60s
+        - type: Percent
+          value: 100
+          periodSeconds: 60

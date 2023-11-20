@@ -18,16 +18,20 @@ ingress:
   hosts:
     - snooty-data-api.docs.staging.corp.mongodb.com
 
+# Current limits and requests are based around metrics during expected peaks
 resources:
   limits:
     memory: 2Gi
   requests:
     memory: 1100Mi
 
+# The current probes are pretty lenient to avoid prematurely shutting down
+# pods during mass fetches. They should be adjusted accordingly in the future
 probes:
   enabled: true
   path: /liveness
   headers: {}
+  # Determines if the pod is still alive. The pod will shut down if this fails.
   liveness:
     httpGet: true
     initialDelaySeconds: 10
@@ -38,7 +42,8 @@ probes:
     # Keeping failureThreshold for liveness higher than readiness to ensure
     # pod stays up even if it's not ready
     failureThreshold: 6
-  # Determines when the pod is ready to receive traffic
+  # Determines when the pod is ready to receive traffic. This may help with ensuring that requests
+  # don't disappear into the void when routed to a new pod that isn't ready yet
   readiness:
     httpGet: true
     initialDelaySeconds: 10
@@ -62,7 +67,13 @@ autoscaling:
     scaleUp:
       stabilizationWindowSeconds: 0 # scaleUp immediately if conditions met
       policies:
-        # 100% of the currently running replicas may at most be added every 60s
-        - type: Percent
-          value: 100
+        - type: Pods
+          value: 1
           periodSeconds: 60
+    scaleDown:
+     stabilizationWindowSeconds: 600
+     policies:
+      # Take down 1 pod every 600 seconds, assuming usage is stable
+       - type: Pods
+         value: 1
+         periodSeconds: 600
