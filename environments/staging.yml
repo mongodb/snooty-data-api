@@ -71,9 +71,9 @@ autoscaling:
           value: 1
           periodSeconds: 60
     scaleDown:
-     stabilizationWindowSeconds: 600
+     stabilizationWindowSeconds: 300
      policies:
-      # Take down 1 pod every 600 seconds, assuming usage is stable
+      # Take down 1 pod every 300 seconds, assuming usage is stable
        - type: Pods
          value: 1
-         periodSeconds: 600
+         periodSeconds: 300
