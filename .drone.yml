@@ -28,8 +28,6 @@ name: staging-build
 trigger:
   branch:
   - main
-  # TODO-4117: Remove when finished testing
-  - DOP-4117
   event:
   - push
 
