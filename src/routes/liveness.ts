@@ -3,7 +3,8 @@ import express from 'express';
 const router = express.Router();
 
 // Simple route that k8s will request in a cadence to ensure the app is live/ready
-router.get('/', async (_req, res, _next) => {
+// eslint-disable-next-line  @typescript-eslint/no-unused-vars
+router.get('/', async (_req, res) => {
   res.sendStatus(200);
 });
 

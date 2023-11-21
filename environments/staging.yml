@@ -21,7 +21,7 @@ ingress:
 # Current limits and requests are based around metrics during expected peaks
 resources:
   limits:
-    memory: 2Gi
+    memory: 3Gi
   requests:
     memory: 1100Mi
 
