@@ -19,4 +19,4 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+CMD ["node", "--max-old-space-size=2304", "dist/index.js"]

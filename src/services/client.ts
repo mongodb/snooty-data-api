@@ -7,6 +7,10 @@ const logger = initiateLogger();
 
 const client = new MongoClient(ATLAS_URI, { appName: APP_NAME });
 
+client.on('topologyClosed', () => {
+  logger.info('Client topology closed');
+});
+
 export const connect = async () => {
   try {
     await client.connect();
