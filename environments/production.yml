@@ -59,8 +59,11 @@ autoscaling:
   metrics:
     - type: Resource
       resource:
-        # Use cpu instead of memory since it's a more accurate metric for current usage for our API
         name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+        name: memory
         target:
           type: Utilization
           averageUtilization: 75
