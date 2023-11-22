@@ -3,13 +3,14 @@ service:
 
 env:
   PORT: 3000
-  SNOOTY_DB_NAME: snooty_stage
-  SNOOTY_PROD_DB_NAME: snooty_dotcomstg
-  POOL_DB_NAME: pool_test
-  SNOOTY_ENV: dotcomstg
+  # TODO-4117: Change config back
+  SNOOTY_DB_NAME: snooty_prod
+  SNOOTY_PROD_DB_NAME: snooty_dotcomprd
+  POOL_DB_NAME: pool
+  SNOOTY_ENV: dotcomprd
 
 envSecrets:
-  ATLAS_URI: snooty-data-api-staging
+  ATLAS_URI: snooty-data-api
 
 ingress:
   enabled: true
@@ -59,8 +60,11 @@ autoscaling:
   metrics:
     - type: Resource
       resource:
-        # Use cpu instead of memory since it's a more accurate metric for current usage for our API
         name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+        name: memory
         target:
           type: Utilization
           averageUtilization: 75
