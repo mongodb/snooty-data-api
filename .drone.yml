@@ -28,6 +28,7 @@ name: staging-build
 trigger:
   branch:
   - main
+  - DOP-4222-staging
   event:
   - push
 
