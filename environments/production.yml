@@ -54,7 +54,7 @@ probes:
 
 autoscaling:
   apiVersion: autoscaling/v2
-  minReplicas: 2
+  minReplicas: 3
   maxReplicas: 5
   metrics:
     - type: Resource
