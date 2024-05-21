@@ -1,6 +1,6 @@
 import { AbstractCursor, Document, FindCursor } from 'mongodb';
 import { Request, Response } from 'express';
-import { Readable } from 'stream'
+import { Readable } from 'stream';
 import { chain } from 'stream-chain';
 import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
 import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
@@ -31,13 +31,18 @@ const logDataCount = (dataType: string, count: number, reqId?: string) => {
 
 /**
  * Handles streaming data from a source stream to an output stream. The output stream is not automatically ended.
- * 
+ *
  * @param stream The source stream for data
  * @param outputStream The pipeline to stream output to
  * @param streamType The type of data handled by the stream
  * @param reqId The request ID to correlate log messages with
  */
-const handleStream = async (sourceStream: Readable & AsyncIterable<Document>, outputStream: Duplex, dataType: string, reqId?: string) => {
+const handleStream = async (
+  sourceStream: Readable & AsyncIterable<Document>,
+  outputStream: Duplex,
+  dataType: string,
+  reqId?: string
+) => {
   // Allow caller to determine when the output stream should finish
   sourceStream.pipe(outputStream, { end: false });
 
@@ -47,7 +52,7 @@ const handleStream = async (sourceStream: Readable & AsyncIterable<Document>, ou
   });
 
   // Wait for stream to end
-  await new Promise<void>((resolve, _) => {
+  await new Promise<void>((resolve) => {
     sourceStream.once('end', async () => {
       resolve();
     });
@@ -57,7 +62,7 @@ const handleStream = async (sourceStream: Readable & AsyncIterable<Document>, ou
 /**
  * Streams timestamp number based on when output streaming began. Clients can use this to act as a sync token
  * for when data was last requested.
- * 
+ *
  * @param outputStream The pipeline to stream output to
  * @param reqId The request ID to correlate log messages with
  */
@@ -70,7 +75,7 @@ const streamTimestamp = (outputStream: Duplex, reqId?: string) => {
 
 /**
  * Streams metadata documents from Snooty Parser build output.
- * 
+ *
  * @param outputStream The pipeline to stream output to
  * @param metadataCursor The cursor used for metadata documents
  * @param reqId The request ID to correlate log messages with
@@ -91,11 +96,11 @@ const streamMetadata = async (outputStream: Duplex, metadataCursor: AbstractCurs
   const stream = metadataCursor.stream({ transform });
   await handleStream(stream, outputStream, dataType, reqId);
   logDataCount(dataType, count, reqId);
-}
+};
 
 /**
  * Streams page documents. Assets found on each page are tracked using `assetData`.
- * 
+ *
  * @param outputStream The pipeline to stream output to
  * @param pagesCursor The cursor used for page documents
  * @param assetData A mutable mapping of asset data and its list of pages
@@ -143,13 +148,18 @@ const streamPages = async (
 
 /**
  * Streams asset documents based on found asset checksums.
- * 
+ *
  * @param outputStream The pipeline to stream output to
  * @param assetData A mutable mapping of asset data and its list of pages
  * @param req The original request object
  * @param reqId The request ID to correlate log messages with
  */
-const streamAssets = async (outputStream: Duplex, assetData: Record<string, Set<string>>, req: Request, reqId?: string) => {
+const streamAssets = async (
+  outputStream: Duplex,
+  assetData: Record<string, Set<string>>,
+  req: Request,
+  reqId?: string
+) => {
   const dataType = 'asset';
   let assetCount = 0;
 
@@ -185,12 +195,12 @@ const streamAssets = async (outputStream: Duplex, assetData: Record<string, Set<
  * pause and resume automatically as data is streamed. Memory usage should be limited
  * to the set batch size of MongoDB cursors, which determines how many documents to keep
  * in memory.
- * 
+ *
  * @param res
  * @param pagesCursor
- * @param metadataCursor 
- * @param opts 
- * @param req 
+ * @param metadataCursor
+ * @param opts
+ * @param req
  */
 export const streamData = async (
   res: Response,
@@ -208,6 +218,6 @@ export const streamData = async (
   await streamMetadata(outputStream, metadataCursor, reqId);
   await streamPages(outputStream, pagesCursor, assetData, opts);
   await streamAssets(outputStream, assetData, req, reqId);
-  
+
   outputStream.end();
 };
