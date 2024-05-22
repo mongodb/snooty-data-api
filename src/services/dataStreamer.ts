@@ -1,5 +1,6 @@
 import { AbstractCursor, Document, FindCursor } from 'mongodb';
 import { Request, Response } from 'express';
+import { Readable } from 'stream';
 import { chain } from 'stream-chain';
 import { Duplex, stringer } from 'stream-json/jsonl/Stringer';
 import { AssetDocument, PageDocType, findAssetsByChecksums } from './database';
@@ -13,92 +14,6 @@ export interface StreamData {
   data: any;
 }
 
-const streamAssets = async (pipeline: Duplex, assetData: Record<string, Set<string>>, req: Request, reqId?: string) => {
-  const checksums = Object.keys(assetData);
-  if (!checksums.length) {
-    pipeline.end();
-    return;
-  }
-
-  const assetsCursor = await findAssetsByChecksums(checksums, req);
-  let assetCount = 0;
-  const assetStream = assetsCursor.stream({
-    transform(doc: AssetDocument) {
-      const checksum = doc._id;
-      const newDoc: StreamData = {
-        type: 'asset',
-        data: {
-          checksum,
-          assetData: doc.data,
-          filenames: [...assetData[checksum]],
-        },
-      };
-      assetCount++;
-      return newDoc;
-    },
-  });
-
-  // Close the stream here
-  assetStream.pipe(pipeline);
-  assetStream.once('end', () => {
-    logger.info(createMessage(`Found ${assetCount} assets`, reqId));
-  });
-  assetStream.once('error', (err) => {
-    logger.error(createMessage(`There was an error streaming assets: ${err}`, reqId));
-    assetStream.destroy();
-  });
-};
-
-const streamPages = async (
-  pipeline: Duplex,
-  pagesCursor: FindCursor<PageDocType>,
-  req: Request,
-  opts: DataStreamOptions = {}
-) => {
-  const assetData: Record<string, Set<string>> = {};
-  let pageCount = 0;
-  const { updatedAssetsOnly, reqTimestamp, reqId } = opts;
-  const pagesStream = pagesCursor.stream({
-    transform(doc: PageDocType) {
-      // Grab static assets for each page. 1 static asset can be used on more than
-      // 1 page. Due to legacy considerations, 1 image can also be referred by more
-      // than 1 filename. This is suboptimal and should be changed in the future
-      doc.static_assets.forEach(({ checksum, key: filename, updated_at: updatedAt }) => {
-        // Skip to next asset if the asset has not been updated
-        if (updatedAssetsOnly && !isUpdated(reqTimestamp, updatedAt)) {
-          return;
-        }
-        if (!assetData[checksum]) {
-          assetData[checksum] = new Set();
-        }
-        assetData[checksum].add(filename);
-      });
-      const newDoc: StreamData = {
-        type: 'page',
-        data: doc,
-      };
-      pageCount++;
-      return newDoc;
-    },
-  });
-
-  pagesStream.pipe(pipeline, { end: false });
-  pagesStream.once('end', async () => {
-    logger.info(createMessage(`Found ${pageCount} pages`, reqId));
-    try {
-      await streamAssets(pipeline, assetData, req, reqId);
-    } catch (err) {
-      logger.error(createMessage(`Error trying to stream assets: ${err}`));
-      pipeline.end();
-      pipeline.destroy();
-    }
-  });
-  pagesStream.once('error', (err) => {
-    logger.error(createMessage(`There was an error streaming pages: ${err}`, reqId));
-    pagesStream.destroy();
-  });
-};
-
 /**
  * Given an update time, returns `true` if the update took place after the request time.
  *
@@ -110,6 +25,169 @@ const isUpdated = (previousTime?: number, newTime?: Date) => {
   return newTime.getTime() > previousTime;
 };
 
+const logDataCount = (dataType: string, count: number, reqId?: string) => {
+  logger.info(createMessage(`Found ${dataType} count: ${count}`, reqId));
+};
+
+/**
+ * Handles streaming data from a source stream to an output stream. The output stream is not automatically ended.
+ *
+ * @param stream The source stream for data
+ * @param outputStream The pipeline to stream output to
+ * @param streamType The type of data handled by the stream
+ * @param reqId The request ID to correlate log messages with
+ */
+const handleStream = async (
+  sourceStream: Readable & AsyncIterable<Document>,
+  outputStream: Duplex,
+  dataType: string,
+  reqId?: string
+) => {
+  // Allow caller to determine when the output stream should finish
+  sourceStream.pipe(outputStream, { end: false });
+
+  // Wait for stream to end
+  await new Promise<void>((resolve, reject) => {
+    sourceStream.once('end', async () => {
+      resolve();
+    });
+
+    sourceStream.once('error', async (err) => {
+      logger.error(createMessage(`There was an error streaming ${dataType}: ${err}`, reqId));
+      sourceStream.destroy();
+      reject();
+    });
+  });
+};
+
+/**
+ * Streams timestamp number based on when output streaming began. Clients can use this to act as a sync token
+ * for when data was last requested.
+ *
+ * @param outputStream The pipeline to stream output to
+ * @param reqId The request ID to correlate log messages with
+ */
+const streamTimestamp = (outputStream: Duplex, reqId?: string) => {
+  const timestamp = Date.now();
+  const timestampChunk = { type: 'timestamp', data: timestamp };
+  logger.info(createMessage(`Returning timestamp: ${timestamp}`, reqId));
+  outputStream.write(timestampChunk);
+};
+
+/**
+ * Streams metadata documents from Snooty Parser build output.
+ *
+ * @param outputStream The pipeline to stream output to
+ * @param metadataCursor The cursor used for metadata documents
+ * @param reqId The request ID to correlate log messages with
+ */
+const streamMetadata = async (outputStream: Duplex, metadataCursor: AbstractCursor<Document>, reqId?: string) => {
+  const dataType = 'metadata';
+  let count = 0;
+
+  const transform = (doc: Document) => {
+    const newDoc: StreamData = {
+      type: dataType,
+      data: doc,
+    };
+    count++;
+    return newDoc;
+  };
+
+  const stream = metadataCursor.stream({ transform });
+  await handleStream(stream, outputStream, dataType, reqId);
+  logDataCount(dataType, count, reqId);
+};
+
+/**
+ * Streams page documents. Assets found on each page are tracked using `assetData`.
+ *
+ * @param outputStream The pipeline to stream output to
+ * @param pagesCursor The cursor used for page documents
+ * @param assetData A mutable mapping of asset data and its list of pages
+ * @param opts Streaming options
+ */
+const streamPages = async (
+  outputStream: Duplex,
+  pagesCursor: FindCursor<PageDocType>,
+  assetData: Record<string, Set<string>>,
+  opts: DataStreamOptions = {}
+) => {
+  const { updatedAssetsOnly, reqTimestamp, reqId } = opts;
+  const dataType = 'page';
+  let pageCount = 0;
+
+  const transform = (doc: PageDocType) => {
+    // Grab static assets for each page. 1 static asset can be used on more than
+    // 1 page. Due to legacy considerations, 1 image can also be referred by more
+    // than 1 filename. This is suboptimal and should be changed in the future
+    doc.static_assets.forEach(({ checksum, key: filename, updated_at: updatedAt }) => {
+      // Skip to next asset if the asset has not been updated
+      if (updatedAssetsOnly && !isUpdated(reqTimestamp, updatedAt)) {
+        return;
+      }
+      if (!assetData[checksum]) {
+        assetData[checksum] = new Set();
+      }
+      assetData[checksum].add(filename);
+    });
+
+    const newDoc: StreamData = {
+      type: dataType,
+      data: doc,
+    };
+    pageCount++;
+    return newDoc;
+  };
+
+  const pagesStream = pagesCursor.stream({ transform });
+  await handleStream(pagesStream, outputStream, dataType, reqId);
+  logDataCount(dataType, pageCount, reqId);
+};
+
+/**
+ * Streams asset documents based on found asset checksums.
+ *
+ * @param outputStream The pipeline to stream output to
+ * @param assetData A mutable mapping of asset data and its list of pages
+ * @param req The original request object
+ * @param reqId The request ID to correlate log messages with
+ */
+const streamAssets = async (
+  outputStream: Duplex,
+  assetData: Record<string, Set<string>>,
+  req: Request,
+  reqId?: string
+) => {
+  const dataType = 'asset';
+  let assetCount = 0;
+
+  const checksums = Object.keys(assetData);
+  if (!checksums.length) {
+    logDataCount(dataType, assetCount, reqId);
+    return;
+  }
+
+  const assetsCursor = findAssetsByChecksums(checksums, req);
+  const transform = (doc: AssetDocument) => {
+    const checksum = doc._id;
+    const newDoc: StreamData = {
+      type: dataType,
+      data: {
+        checksum,
+        assetData: doc.data,
+        filenames: [...assetData[checksum]],
+      },
+    };
+    assetCount++;
+    return newDoc;
+  };
+
+  const assetStream = assetsCursor.stream({ transform });
+  await handleStream(assetStream, outputStream, dataType, reqId);
+  logDataCount(dataType, assetCount, reqId);
+};
+
 /**
  * Creates a pipeline from build artifacts to the Express Response. Documents are
  * transformed to denote respective data types (metadata, page, asset). Pipelines should
@@ -119,7 +197,9 @@ const isUpdated = (previousTime?: number, newTime?: Date) => {
  *
  * @param res
  * @param pagesCursor
- * @param metadataDoc
+ * @param metadataCursor
+ * @param opts
+ * @param req
  */
 export const streamData = async (
   res: Response,
@@ -128,54 +208,16 @@ export const streamData = async (
   opts: DataStreamOptions = {},
   req: Request
 ) => {
-  const timestamp = Date.now();
   const { reqId } = opts;
+  const outputStream = chain([stringer(), res]);
+  // Mutable mapping to track what assets are used for different pages
+  const assetData = {};
 
-  res.once('error', (err) => {
-    logger.error(createMessage(`Error with response pipeline: ${err}`, reqId));
-    // Destroy streams in hopes of preventing memory leaks
-    res.destroy();
-  });
+  streamTimestamp(outputStream, reqId);
+  await streamMetadata(outputStream, metadataCursor, reqId);
+  await streamPages(outputStream, pagesCursor, assetData, opts);
+  // Stream this sequentially since data for assets is dependent on pages found
+  await streamAssets(outputStream, assetData, req, reqId);
 
-  // Used as a chain of streams for output
-  const pipeline = chain([stringer(), res]);
-
-  // Return timestamp to inform Gatsby Cloud when data was last queried
-  const timestampChunk: StreamData = { type: 'timestamp', data: timestamp };
-  logger.info(createMessage(`Returning timestamp: ${timestamp}`, reqId));
-  pipeline.write(timestampChunk);
-
-  let metadataCount = 0;
-  const metadataStream = metadataCursor.stream({
-    transform(doc) {
-      const newDoc: StreamData = {
-        type: 'metadata',
-        data: doc,
-      };
-      metadataCount++;
-      return newDoc;
-    },
-  });
-
-  // We use pipe() instead of promisified pipeline() here due to weird behavior with
-  // having multiple streams in the same pipeline and setting `end` to false.
-  metadataStream.pipe(pipeline, { end: false });
-  // Chaining sequential streams like this is not ideal
-  metadataStream.once('end', async () => {
-    logger.info(createMessage(`Found ${metadataCount} metadata documents`, reqId));
-    try {
-      await streamPages(pipeline, pagesCursor, req, opts);
-    } catch (err) {
-      // Don't throw error since it'll just be a fatal error. Report it
-      // and end the stream since response headers could already have been
-      // sent by then.
-      logger.error(createMessage(`Error trying to stream pages: ${err}`));
-      pipeline.end();
-      pipeline.destroy();
-    }
-  });
-  metadataStream.once('error', (err) => {
-    logger.error(createMessage(`There was an error streaming metadata: ${err}`, reqId));
-    metadataStream.destroy();
-  });
+  outputStream.end();
 };
