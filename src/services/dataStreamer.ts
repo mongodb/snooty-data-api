@@ -46,15 +46,16 @@ const handleStream = async (
   // Allow caller to determine when the output stream should finish
   sourceStream.pipe(outputStream, { end: false });
 
-  sourceStream.once('error', async (err) => {
-    logger.error(createMessage(`There was an error streaming ${dataType}: ${err}`, reqId));
-    sourceStream.destroy();
-  });
-
   // Wait for stream to end
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
     sourceStream.once('end', async () => {
       resolve();
+    });
+
+    sourceStream.once('error', async (err) => {
+      logger.error(createMessage(`There was an error streaming ${dataType}: ${err}`, reqId));
+      sourceStream.destroy();
+      reject();
     });
   });
 };
@@ -130,8 +131,6 @@ const streamPages = async (
       }
       assetData[checksum].add(filename);
     });
-
-    // TODO: Remove line number objects
 
     const newDoc: StreamData = {
       type: dataType,
@@ -217,6 +216,7 @@ export const streamData = async (
   streamTimestamp(outputStream, reqId);
   await streamMetadata(outputStream, metadataCursor, reqId);
   await streamPages(outputStream, pagesCursor, assetData, opts);
+  // Stream this sequentially since data for assets is dependent on pages found
   await streamAssets(outputStream, assetData, req, reqId);
 
   outputStream.end();
