@@ -108,8 +108,6 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
         },
       },
     ];
-    console.log('check findOptions ');
-    console.log(findOptions);
     const cursor = await db.collection(REPOS_COLLECTION).aggregate(pipeline, findOptions);
     const res = await cursor.toArray();
     return res.map((element) => {
