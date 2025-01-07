@@ -18,6 +18,8 @@ interface BranchEntry {
   urlAliases: string[];
   isStableBranch: boolean;
   versionSelectorLabel: string;
+  urlSlug: string;
+  offlineUrl?: string;
   [key: string]: any;
 }
 
@@ -140,6 +142,7 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
     fullUrl: getBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
     label: branchEntry.versionSelectorLabel,
     isStableBranch: !!branchEntry.isStableBranch,
+    offlineUrl: branchEntry.offlineUrl,
   }));
 };
 
