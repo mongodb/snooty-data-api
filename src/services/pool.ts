@@ -18,6 +18,7 @@ interface BranchEntry {
   urlAliases: string[];
   isStableBranch: boolean;
   versionSelectorLabel: string;
+  urlSlug: string;
   offlineUrl?: string;
   [key: string]: any;
 }
