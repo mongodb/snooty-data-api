@@ -18,6 +18,7 @@ interface BranchEntry {
   urlAliases: string[];
   isStableBranch: boolean;
   versionSelectorLabel: string;
+  offlineUrl?: string;
   [key: string]: any;
 }
 
@@ -107,6 +108,8 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
         },
       },
     ];
+    console.log('check findOptions ');
+    console.log(findOptions);
     const cursor = await db.collection(REPOS_COLLECTION).aggregate(pipeline, findOptions);
     const res = await cursor.toArray();
     return res.map((element) => {
@@ -140,6 +143,7 @@ const mapBranches = (branches: BranchEntry[], fullBaseUrl: string) => {
     fullUrl: getBranchFullUrl(branchEntry, fullBaseUrl, branches.length > 1),
     label: branchEntry.versionSelectorLabel,
     isStableBranch: !!branchEntry.isStableBranch,
+    offlineUrl: branchEntry.offlineUrl,
   }));
 };
 
