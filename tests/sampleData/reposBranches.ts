@@ -4,6 +4,7 @@ export const sampleReposBranches = [
   {
     _id: new ObjectId('5fc999ce3f17b4e8917e0494'),
     repoName: 'cloud-docs',
+    displayName: 'MongoDB Atlas',
     branches: [
       {
         name: 'master',
@@ -51,6 +52,7 @@ export const sampleReposBranches = [
   {
     _id: new ObjectId('5f6aaeb682989d521a60636a'),
     repoName: 'docs-landing',
+    displayName: 'MongoDB Documentation',
     branches: [
       {
         name: 'master',
@@ -94,6 +96,7 @@ export const sampleReposBranches = [
   {
     _id: new ObjectId('5fac1ce373a72fca02ec90c5'),
     repoName: 'docs',
+    displayName: 'MongoDB Manual',
     branches: [
       {
         id: new ObjectId('6447e9e7e033e0a801c80f56'),
@@ -349,6 +352,7 @@ export const sampleReposBranches = [
   {
     _id: new ObjectId('614b9f5b8d181382ca755ade'),
     repoName: 'docs-mongodb-internal',
+    displayName: 'MongoDB Manual',
     branches: [
       {
         id: new ObjectId('62e293ce8b1d857926ab4cca'),

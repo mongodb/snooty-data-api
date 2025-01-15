@@ -30,6 +30,7 @@ interface RepoDocument extends WithId<Document> {
   url: EnvKeyedObject;
   prefix: EnvKeyedObject;
   search: Record<string, string>;
+  displayName?: string;
 }
 
 interface EnvKeyedURL {
@@ -59,6 +60,7 @@ export interface BranchResponse {
 }
 
 export interface RepoResponse {
+  displayName?: string;
   repoName: string;
   project: string;
   search: Record<string, string>;
@@ -95,6 +97,7 @@ export const findAllRepos = async (options: FindOptions = {}, reqId?: string) =>
         branches: 1,
         url: 1,
         prefix: 1,
+        displayName: 1,
       },
     };
     const findOptions = { ...defaultSort, ...options, ...strictOptions };
@@ -152,6 +155,7 @@ const mapDocsetRepo = (docsetRepo: DocsetRepoDocument): RepoResponse => {
     ? mapBranches(docsetRepo.branches, getRepoUrl(docset.url[ENV_URL_KEY], docset.prefix[ENV_URL_KEY]))
     : [];
   return {
+    displayName: docsetRepo.displayName,
     repoName: docsetRepo.repoName,
     project: docsetRepo.project,
     search: docsetRepo.search,
