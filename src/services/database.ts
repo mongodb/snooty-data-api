@@ -7,6 +7,13 @@ interface StaticAsset {
   updated_at?: Date;
 }
 
+interface Facet {
+  categroy: string;
+  value: string;
+  display_name: string;
+  sub_facets?: { [key: string]: any }[];
+}
+
 export interface AssetDocument {
   _id: string;
   data: BinaryData;
@@ -22,6 +29,7 @@ interface PageDocument {
   build_id: ObjectId;
   created_at: Date;
   github_username: string;
+  facets?: Facet[];
 }
 
 interface UpdatedPageDocument {
@@ -34,6 +42,7 @@ interface UpdatedPageDocument {
   updated_at: Date;
   github_username: string;
   deleted: boolean;
+  facets?: Facet[];
 }
 
 export type PageDocType = PageDocument | UpdatedPageDocument;
