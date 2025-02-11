@@ -8,7 +8,7 @@ interface StaticAsset {
 }
 
 interface Facet {
-  categroy: string;
+  category: string;
   value: string;
   display_name: string;
   sub_facets?: { [key: string]: any }[];
