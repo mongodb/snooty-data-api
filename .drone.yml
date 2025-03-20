@@ -6,7 +6,6 @@ name: test
 trigger:
   branch:
   - main
-  - DOP-5513
   event:
   - push
   - tag
@@ -29,7 +28,6 @@ name: staging-build
 trigger:
   branch:
   - main
-  - DOP-5513
   event:
   - push
 
