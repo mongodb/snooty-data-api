@@ -11,7 +11,7 @@ import { connect } from './services/client';
 import { initDb } from './services/database';
 import { initPoolDb } from './services/pool';
 import { createMessage, initiateLogger } from './services/logger';
-import { getRequestId } from './utils';
+import { getRequestId, isPermittedOrigin } from './utils';
 
 interface AppSettings {
   mongoClient?: MongoClient;
@@ -33,13 +33,19 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   }
 };
 
-const reqHandler: RequestHandler = (req, _res, next) => {
+const reqHandler: RequestHandler = (req, res, next) => {
   const reqId = new ObjectId().toString();
   // Custom header specifically for a request ID. This ID will be used to track
   // logs related to the same request
   req.headers['req-id'] = reqId;
   const message = `Request for: ${req.url}`;
   logger.info(createMessage(message, reqId));
+
+  // allow cross origin requests from our web servers
+  const origin = req.headers.origin;
+  if (origin && isPermittedOrigin(origin)) {
+    res.append('Access-Control-Allow-Origin', origin);
+  }
   next();
 };
 

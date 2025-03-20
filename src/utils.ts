@@ -24,3 +24,20 @@ export const assertTrailingSlash = (str: string) => {
   }
   return `${str}/`;
 };
+
+const STAGING_HOSTNAME = 'docs-mongodb-org-stg.s3.us-east-2.amazonaws.com';
+const PROD_HOSTNAME = 'mongodb.com';
+
+export const isPermittedOrigin = (origin: string | undefined) => {
+  if (!origin) return;
+  let url;
+  try {
+    url = new URL(origin);
+  } catch (err) {
+    return;
+  }
+  return (
+    url.protocol == 'https:' &&
+    (url.hostname === STAGING_HOSTNAME || url.hostname.split('.').slice(-2).join('.') === PROD_HOSTNAME)
+  );
+};
