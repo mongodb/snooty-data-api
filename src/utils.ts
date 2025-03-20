@@ -29,15 +29,15 @@ const STAGING_HOSTNAME = 'netlify.app';
 const PROD_HOSTNAME = 'mongodb.com';
 
 export const isPermittedOrigin = (origin: string | undefined) => {
-  if (!origin) return;
+  if (!origin) return false;
   let url;
   try {
     url = new URL(origin);
   } catch (err) {
-    return;
+    return false;
   }
   return (
-    url.protocol == 'https:' &&
+    url.protocol === 'https:' &&
     (url.hostname.split('.').slice(-2).join('.') === STAGING_HOSTNAME ||
       url.hostname.split('.').slice(-2).join('.') === PROD_HOSTNAME)
   );
