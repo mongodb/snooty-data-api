@@ -25,7 +25,7 @@ export const assertTrailingSlash = (str: string) => {
   return `${str}/`;
 };
 
-const STAGING_HOSTNAME = 'docs-mongodb-org-stg.s3.us-east-2.amazonaws.com';
+const STAGING_HOSTNAME = 'netlify.app';
 const PROD_HOSTNAME = 'mongodb.com';
 
 export const isPermittedOrigin = (origin: string | undefined) => {
@@ -38,6 +38,7 @@ export const isPermittedOrigin = (origin: string | undefined) => {
   }
   return (
     url.protocol == 'https:' &&
-    (url.hostname === STAGING_HOSTNAME || url.hostname.split('.').slice(-2).join('.') === PROD_HOSTNAME)
+    (url.hostname.split('.').slice(-2).join('.') === STAGING_HOSTNAME ||
+      url.hostname.split('.').slice(-2).join('.') === PROD_HOSTNAME)
   );
 };
