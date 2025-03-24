@@ -11,7 +11,6 @@ export const sampleUpdatedPageDocuments = [
     static_assets: [],
     created_at: new Date('2023-04-06T13:25:40.000Z'),
     updated_at: new Date('2023-04-06T13:25:40.000Z'),
-    github_username: 'babadook',
     deleted: false,
   },
   {
@@ -24,7 +23,6 @@ export const sampleUpdatedPageDocuments = [
     static_assets: [],
     created_at: new Date('2023-04-06T13:25:40.000Z'),
     updated_at: new Date('2023-04-06T14:25:40.000Z'),
-    github_username: 'babadook',
     deleted: true,
   },
   {
@@ -49,7 +47,6 @@ export const sampleUpdatedPageDocuments = [
     ],
     created_at: new Date('2023-04-06T13:25:40.000Z'),
     updated_at: new Date('2023-04-06T14:25:40.000Z'),
-    github_username: 'babadook',
     deleted: false,
   },
   {
@@ -73,7 +70,6 @@ export const sampleUpdatedPageDocuments = [
     ],
     created_at: new Date('2023-04-06T13:25:40.000Z'),
     updated_at: new Date('2023-04-06T13:25:40.000Z'),
-    github_username: 'babadook',
     deleted: false,
   },
   {
@@ -84,7 +80,6 @@ export const sampleUpdatedPageDocuments = [
     static_assets: [],
     created_at: new Date('2023-04-06T13:25:40.000Z'),
     updated_at: new Date('2023-04-06T13:25:40.000Z'),
-    github_username: 'docs-builder-bot',
     deleted: false,
   },
   {
@@ -95,7 +90,6 @@ export const sampleUpdatedPageDocuments = [
     static_assets: [],
     created_at: new Date('2023-04-06T13:25:40.000Z'),
     updated_at: new Date('2023-04-06T13:25:40.000Z'),
-    github_username: 'babadook',
     deleted: false,
   },
   {
@@ -106,7 +100,6 @@ export const sampleUpdatedPageDocuments = [
     source: 'wahoo',
     static_assets: [],
     created_at: new Date('2023-04-03T13:26:40.000Z'),
-    github_username: 'babadook',
     deleted: true,
     updated_at: new Date('2023-04-06T15:25:40.000Z'),
   },

@@ -28,7 +28,6 @@ interface PageDocument {
   static_assets: StaticAsset[];
   build_id: ObjectId;
   created_at: Date;
-  github_username: string;
   facets?: Facet[];
 }
 
@@ -40,7 +39,6 @@ interface UpdatedPageDocument {
   static_assets: StaticAsset[];
   created_at: Date;
   updated_at: Date;
-  github_username: string;
   deleted: boolean;
   facets?: Facet[];
 }
@@ -97,15 +95,6 @@ export const findPagesByProj = (project: string, req: Request, timestamp?: numbe
   return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
 };
 
-export const findPagesByUser = (user: string, req: Request, timestamp?: number) => {
-  const query: Filter<UpdatedPageDocument> = { github_username: user };
-  if (timestamp) {
-    const lastQuery = new Date(timestamp);
-    query['updated_at'] = { $gte: lastQuery };
-  }
-  return getDb(req).collection<UpdatedPageDocument>(UPDATED_PAGES_COLLECTION).find(query);
-};
-
 export const findPagesByProjAndBranch = (project: string, branch: string, req: Request, timestamp?: number) => {
   const pageIdQuery = getPageIdQuery(project, branch);
   const query: Filter<UpdatedPageDocument> = { page_id: pageIdQuery };
@@ -151,7 +140,7 @@ export const findLatestMetadataByProperty = (filter: Filter<Document>, req: Requ
     // Group documents by unique project + branch + user combination, and only
     // embed the first doc seen (or most recent, based on sorting stage)
     {
-      $group: { _id: { project: '$project', branch: '$branch', user: '$github_username' }, doc: { $first: '$$ROOT' } },
+      $group: { _id: { project: '$project', branch: '$branch' }, doc: { $first: '$$ROOT' } },
     },
     // Un-embed the doc from each group
     { $replaceRoot: { newRoot: '$doc' } },
