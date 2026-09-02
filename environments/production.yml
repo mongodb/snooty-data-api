@@ -5,7 +5,7 @@ env:
   PORT: 3000
   SNOOTY_DB_NAME: snooty_prod
   SNOOTY_PROD_DB_NAME: snooty_dotcomprd
-  POOL_DB_NAME: pool
+  DOCSETS_API_URL: 'https://docs-on-nextjs.netlify.app/api/docsets/'
   SNOOTY_ENV: dotcomprd
 
 envSecrets:
