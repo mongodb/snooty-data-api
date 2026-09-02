@@ -65,7 +65,7 @@ exports[`Test projects routes should return the full listing payload 1`] = `
     "branches": [
       {
         "active": true,
-        "fullUrl": "/docs/atlas/",
+        "fullUrl": "http://mongodb.com/docs/atlas/",
         "gitBranchName": "master",
         "isStableBranch": true,
         "label": "master",
@@ -83,7 +83,7 @@ exports[`Test projects routes should return the full listing payload 1`] = `
     "branches": [
       {
         "active": true,
-        "fullUrl": "/docs/compass/",
+        "fullUrl": "http://mongodb.com/docs/compass/",
         "gitBranchName": "current",
         "isStableBranch": true,
         "label": "Latest",
@@ -101,14 +101,14 @@ exports[`Test projects routes should return the full listing payload 1`] = `
     "branches": [
       {
         "active": true,
-        "fullUrl": "/docs/drivers/node/v6.0",
+        "fullUrl": "http://mongodb.com/docs/drivers/node/v6.0",
         "gitBranchName": "v6.0",
         "isStableBranch": true,
         "label": "6.0 (current)",
       },
       {
         "active": false,
-        "fullUrl": "/docs/drivers/node/v5.0",
+        "fullUrl": "http://mongodb.com/docs/drivers/node/v5.0",
         "gitBranchName": "v5.0",
         "isStableBranch": false,
         "label": "5.0",

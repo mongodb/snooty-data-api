@@ -83,7 +83,20 @@ export interface RepoResponse {
   branches: BranchResponse[];
 }
 
-const ENV_URL_KEY = (process.env.SNOOTY_ENV ?? 'dotcomprd') as keyof EnvKeyedObject;
+// Only the dotcom hosts are supported. The legacy feed also carries prd/stg/dev/
+// regression keys, but a value outside this set silently resolved to an empty
+// base URL and produced "//" links, so an unknown value is a hard error.
+const VALID_ENV_KEYS: (keyof EnvKeyedObject)[] = ['dotcomprd', 'dotcomstg'];
+
+// Read at call time rather than module load: dotenv.config() runs after module
+// evaluation, so a module-level read can miss values coming from .env.
+const envUrlKey = (): keyof EnvKeyedObject => {
+  const key = process.env.SNOOTY_ENV ?? 'dotcomprd';
+  if (!VALID_ENV_KEYS.includes(key as keyof EnvKeyedObject)) {
+    throw new Error(`Invalid SNOOTY_ENV "${key}"; expected one of ${VALID_ENV_KEYS.join(', ')}`);
+  }
+  return key as keyof EnvKeyedObject;
+};
 const DOCSETS_API_URL = process.env.DOCSETS_API_URL;
 // The upstream data changes rarely (a version cut, an EOL) and our main consumer
 // polls roughly daily, so a coarse TTL keeps us close to correct while making the
@@ -117,7 +130,7 @@ const isNewSchema = (entry: DocsetsApiEntry): entry is Docset => Array.isArray((
  */
 const resolveEnvKeyed = (value: EnvKeyedObject | string | undefined): string => {
   if (typeof value === 'string') return value;
-  if (value && typeof value === 'object') return value[ENV_URL_KEY] ?? '';
+  if (value && typeof value === 'object') return value[envUrlKey()] ?? '';
   return '';
 };
 
@@ -206,15 +219,27 @@ const mapNewEntry = (entry: Docset): RepoResponse => {
  * repos_branches, which requires the field to be literally false and guarantees
  * a branches array).
  *
- * New-schema entries carry no `internalOnly`: the docsets API is expected to
+ * New-schema entries will carry no `internalOnly`: the docsets API will
  * serve only what belongs in the given environment, so they are all included.
  */
 const isPublishedLegacyEntry = (entry: LegacyDocsetEntry) =>
   entry.internalOnly !== true && Array.isArray(entry.branches);
 
+/**
+ * A docset entry with no resolvable host should be treated as bad data.
+ * Currently, the `cloud` docset has null url and prefix.
+ * Treat as bad data rather than emitting it.
+ */
+const hasResolvableHost = (entry: DocsetsApiEntry) => !!resolveEnvKeyed(entry.url);
+
 export const mapDocsetsResponse = (entries: DocsetsApiEntry[]): RepoResponse[] =>
   entries
     .filter((entry) => isNewSchema(entry) || isPublishedLegacyEntry(entry as LegacyDocsetEntry))
+    .filter((entry) => {
+      if (hasResolvableHost(entry)) return true;
+      logger.warn(createMessage(`Skipping docset "${entry.project}": no resolvable url for this environment`));
+      return false;
+    })
     .map((entry) => (isNewSchema(entry) ? mapNewEntry(entry) : mapLegacyEntry(entry as LegacyDocsetEntry)))
     .sort((a, b) => a.project.localeCompare(b.project));
 

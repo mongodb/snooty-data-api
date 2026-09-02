@@ -75,7 +75,12 @@ describe('docsets schema mapping', () => {
 
     it('defaults label to versionName', () => {
       const [repo] = mapDocsetsResponse([
-        { project: 'example', prefix: 'docs/example', versions: [{ versionName: 'v1.0' }] },
+        {
+          project: 'example',
+          prefix: 'docs/example',
+          url: { dotcomprd: 'http://mongodb.com/', dotcomstg: '' },
+          versions: [{ versionName: 'v1.0' }],
+        },
       ] as any);
       expect(repo.branches[0].label).toBe('v1.0');
     });
@@ -90,7 +95,12 @@ describe('docsets schema mapping', () => {
 
     it('leaves search absent when the docset has none', () => {
       const [repo] = mapDocsetsResponse([
-        { project: 'example', prefix: 'docs/example', versions: [{ versionName: 'main' }] },
+        {
+          project: 'example',
+          prefix: 'docs/example',
+          url: { dotcomprd: 'http://mongodb.com/', dotcomstg: '' },
+          versions: [{ versionName: 'main' }],
+        },
       ] as any);
       expect(repo.search).toBeUndefined();
     });
@@ -176,5 +186,43 @@ describe('repoName under the new schema', () => {
   it('is always present, so consumers reading it never see undefined', () => {
     const next = mapDocsetsResponse(newDocsetsApiResponse as any);
     next.forEach((repo) => expect(repo.repoName).toBe(repo.project));
+  });
+});
+
+describe('environment resolution', () => {
+  const original = process.env.SNOOTY_ENV;
+  afterEach(() => {
+    if (original === undefined) delete process.env.SNOOTY_ENV;
+    else process.env.SNOOTY_ENV = original;
+  });
+
+  it('rejects an unknown SNOOTY_ENV instead of emitting "//" urls', () => {
+    // "prod" is not a key in the env maps (they use "prd"), which previously
+    // resolved to an empty host and produced fullUrls like "//upcoming".
+    process.env.SNOOTY_ENV = 'prod';
+    expect(() => mapDocsetsResponse(legacyDocsetsApiResponse as any)).toThrow('Invalid SNOOTY_ENV');
+  });
+
+  it('resolves staging hosts when SNOOTY_ENV is dotcomstg', () => {
+    process.env.SNOOTY_ENV = 'dotcomstg';
+    const [first] = mapDocsetsResponse(legacyDocsetsApiResponse as any);
+    expect(first.branches[0].fullUrl).toContain('mongodbcom-cdn.website.staging.corp.mongodb.com');
+  });
+
+  it('skips entries with no resolvable host rather than emitting "//"', () => {
+    const mapped = mapDocsetsResponse([
+      ...(legacyDocsetsApiResponse as any),
+      {
+        project: 'cloud',
+        internalOnly: false,
+        url: null,
+        prefix: null,
+        branches: [
+          { gitBranchName: 'main', active: true, isStableBranch: true, versionSelectorLabel: 'main', urlSlug: null },
+        ],
+      },
+    ] as any);
+    expect(mapped.find((r) => r.project === 'cloud')).toBeUndefined();
+    mapped.forEach((r) => r.branches.forEach((b) => expect(b.fullUrl.startsWith('//')).toBe(false)));
   });
 });

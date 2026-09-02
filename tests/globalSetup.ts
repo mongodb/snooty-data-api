@@ -30,5 +30,7 @@ export default async function globalSetup() {
   process.env.BUILDER_USER = 'docsworker-xlarge';
   process.env.SNOOTY_DB_NAME = 'snooty_dev';
   process.env.DOCSETS_API_URL = 'https://example.com/docs/api/docsets';
+  // Set explicitly so a developer's local .env cannot change test output.
+  process.env.SNOOTY_ENV = 'dotcomprd';
   await loadData();
 }
