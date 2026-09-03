@@ -1,8 +1,8 @@
 import { MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
-import { BranchResponse, RepoResponse } from '../../src/services/pool';
-import { sampleReposBranches } from '../sampleData/reposBranches';
+import { BranchResponse, RepoResponse, _resetDocsetsCache } from '../../src/services/docsets';
+import { newDocsetsApiResponse } from '../sampleData/docsetsApi';
 
 const timestamp = 1685714694420;
 
@@ -11,8 +11,19 @@ describe('Test projects routes', () => {
   const client = new MongoClient(process.env.ATLAS_URI!);
   let app: Express.Application;
 
+  const fetchMock = jest.fn();
+
   beforeAll(async () => {
     Date.now = jest.fn(() => timestamp);
+    // /projects now reads from the docsets API rather than the pool database.
+    global.fetch = fetchMock as unknown as typeof fetch;
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => newDocsetsApiResponse,
+    });
+    _resetDocsetsCache();
     app = await setupApp({ mongoClient: client });
   });
 
@@ -20,13 +31,14 @@ describe('Test projects routes', () => {
     await client.close();
   });
 
-  it('should return all external and internal projects from the base route', async () => {
-    const res = await request(app).get('/projects');
+  // Internal projects are no longer filtered here: the prod docsets API simply
+  // does not serve them, and staging serves only what belongs in staging.
+  it.each(['/projects', '/prod/projects'])('should return all projects from %s', async (path) => {
+    const res = await request(app).get(path);
     expect(res.status).toBe(200);
     const projects = JSON.parse(res.text)['data'];
-    expect(projects.length).toBeLessThanOrEqual(sampleReposBranches.length);
+    expect(projects).toHaveLength(newDocsetsApiResponse.length);
     expect(projects.find((p: any) => p?.repoName === 'cloud-docs')).toBeTruthy();
-    expect(projects.filter((p: any) => p?.repoName === 'docs-mongodb-internal')).toBeTruthy();
     projects.forEach((p: RepoResponse) => {
       p.branches.forEach((b: BranchResponse) => {
         expect(b.isStableBranch).toBeDefined();
@@ -35,19 +47,26 @@ describe('Test projects routes', () => {
     });
   });
 
-  it('should return all external projects from the prod base route', async () => {
-    const res = await request(app).get('/prod/projects');
-    expect(res.status).toBe(200);
+  it('should sort projects by project name', async () => {
+    const res = await request(app).get('/projects');
     const projects = JSON.parse(res.text)['data'];
-    expect(projects.length).toBeLessThanOrEqual(sampleReposBranches.length);
-    expect(projects.find((p: any) => p?.repoName === 'cloud-docs')).toBeTruthy();
-    expect(projects.filter((p: any) => p?.repoName?.includes('internal'))).toHaveLength(0);
-    projects.forEach((p: RepoResponse) => {
-      p.branches.forEach((b: BranchResponse) => {
-        expect(b.isStableBranch).toBeDefined();
-        expect(typeof b.isStableBranch).toBe('boolean');
-      });
-    });
+    expect(projects.map((p: RepoResponse) => p.project)).toEqual(['cloud-docs', 'compass', 'node']);
+  });
+
+  it('should return the full listing payload', async () => {
+    const res = await request(app).get('/projects');
+    expect(JSON.parse(res.text)['data']).toMatchSnapshot();
+  });
+
+  it('should return a 500 when the docsets API fails with no cache available', async () => {
+    _resetDocsetsCache();
+    fetchMock.mockRejectedValueOnce(new Error('upstream down'));
+    const res = await request(app).get('/projects');
+    expect(res.status).toBe(500);
+
+    // Restore the cache for any subsequent assertions.
+    _resetDocsetsCache();
+    await request(app).get('/projects');
   });
 
   it('should return all data based on project and branch', async () => {
