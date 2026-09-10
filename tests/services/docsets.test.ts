@@ -1,5 +1,9 @@
 import { mapDocsetsResponse, RepoResponse } from '../../src/services/docsets';
-import { legacyDocsetsApiResponse, newDocsetsApiResponse } from '../sampleData/docsetsApi';
+import {
+  legacyDocsetsApiResponse,
+  newDocsetsApiResponse,
+  newDocsetsApiPublishedProjects,
+} from '../sampleData/docsetsApi';
 
 const byProject = (repos: RepoResponse[]) => Object.fromEntries(repos.map((r) => [r.project, r]));
 
@@ -167,8 +171,10 @@ describe('legacy feed filtering', () => {
     expect(mapped.map((r) => r.project)).toEqual(['cloud-docs', 'compass', 'node']);
   });
 
-  it('does not filter new-schema entries, which carry no internalOnly field', () => {
-    expect(mapDocsetsResponse(newDocsetsApiResponse as any)).toHaveLength(newDocsetsApiResponse.length);
+  it('applies the same internalOnly filter to new-schema entries', () => {
+    expect(mapDocsetsResponse(newDocsetsApiResponse as any).map((r) => r.project)).toEqual(
+      newDocsetsApiPublishedProjects
+    );
   });
 });
 
@@ -224,5 +230,52 @@ describe('environment resolution', () => {
     ] as any);
     expect(mapped.find((r) => r.project === 'cloud')).toBeUndefined();
     mapped.forEach((r) => r.branches.forEach((b) => expect(b.fullUrl.startsWith('//')).toBe(false)));
+  });
+});
+
+describe('internalOnly filtering across both schemas', () => {
+  // internalOnly is retained in the new schema, so the listing filter must apply
+  // to both shapes. Note /api/search-mapping deliberately does NOT filter it.
+  it('excludes internal-only entries from the new schema', () => {
+    const mapped = mapDocsetsResponse(newDocsetsApiResponse as any);
+    expect(mapped.find((r) => r.project === 'dop-docs')).toBeUndefined();
+    expect(mapped.map((r) => r.project)).toEqual(newDocsetsApiPublishedProjects);
+  });
+
+  it('excludes internal-only entries from the legacy schema', () => {
+    const mapped = mapDocsetsResponse(legacyDocsetsApiResponse as any);
+    expect(mapped.find((r) => r.project === 'dop-docs')).toBeUndefined();
+  });
+
+  it('treats an absent internalOnly as public in the new schema', () => {
+    const [repo] = mapDocsetsResponse([
+      {
+        project: 'example',
+        prefix: 'docs/example',
+        url: { dotcomprd: 'http://mongodb.com/', dotcomstg: '' },
+        versions: [{ versionName: 'main' }],
+      },
+    ] as any);
+    expect(repo.project).toBe('example');
+  });
+
+  it('excludes new-schema entries only when internalOnly is exactly true', () => {
+    const mapped = mapDocsetsResponse([
+      {
+        project: 'explicit-false',
+        internalOnly: false,
+        prefix: 'docs/a',
+        url: { dotcomprd: 'http://mongodb.com/', dotcomstg: '' },
+        versions: [{ versionName: 'main' }],
+      },
+      {
+        project: 'explicit-true',
+        internalOnly: true,
+        prefix: 'docs/b',
+        url: { dotcomprd: 'http://mongodb.com/', dotcomstg: '' },
+        versions: [{ versionName: 'main' }],
+      },
+    ] as any);
+    expect(mapped.map((r) => r.project)).toEqual(['explicit-false']);
   });
 });

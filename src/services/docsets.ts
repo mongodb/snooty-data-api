@@ -55,6 +55,8 @@ interface Version {
 interface Docset {
   project: string;
   displayName?: string;
+  /** Absent means public. */
+  internalOnly?: boolean;
   /** Single published prefix, e.g. "docs/atlas/cli". No env map. */
   prefix: string;
   search?: { categoryTitle: string; categoryName?: string };
@@ -213,17 +215,17 @@ const mapNewEntry = (entry: Docset): RepoResponse => {
 };
 
 /**
- * The legacy feed still serves internal-only entries, plus docset rows that have
- * no branches at all, so both are filtered out exactly as the previous
- * pool-backed query did (`$match: { internalOnly: false }` against
- * repos_branches, which requires the field to be literally false and guarantees
- * a branches array).
+ * Whether an entry belongs in the public listing.
  *
- * New-schema entries will carry no `internalOnly`: the docsets API will
- * serve only what belongs in the given environment, so they are all included.
+ * `internalOnly` is filtered here regardless of shape. Absent counts as public.
+ *
+ * Legacy entries additionally need a `branches` array. New-schema entries always
+ * have `versions`, which is what `isNewSchema` tests.
  */
-const isPublishedLegacyEntry = (entry: LegacyDocsetEntry) =>
-  entry.internalOnly !== true && Array.isArray(entry.branches);
+const isPublishedEntry = (entry: DocsetsApiEntry) => {
+  if (entry.internalOnly === true) return false;
+  return isNewSchema(entry) || Array.isArray((entry as LegacyDocsetEntry).branches);
+};
 
 /**
  * A docset entry with no resolvable host should be treated as bad data.
@@ -234,7 +236,7 @@ const hasResolvableHost = (entry: DocsetsApiEntry) => !!resolveEnvKeyed(entry.ur
 
 export const mapDocsetsResponse = (entries: DocsetsApiEntry[]): RepoResponse[] =>
   entries
-    .filter((entry) => isNewSchema(entry) || isPublishedLegacyEntry(entry as LegacyDocsetEntry))
+    .filter(isPublishedEntry)
     .filter((entry) => {
       if (hasResolvableHost(entry)) return true;
       logger.warn(createMessage(`Skipping docset "${entry.project}": no resolvable url for this environment`));

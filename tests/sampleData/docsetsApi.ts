@@ -145,4 +145,17 @@ export const newDocsetsApiResponse = [
       },
     ],
   },
+  {
+    // Filtered out: internalOnly is retained in the new schema, so the listing
+    // must exclude these entries on the new path too, not just the legacy one.
+    displayName: 'DOP Docs',
+    project: 'dop-docs',
+    internalOnly: true,
+    url: DOTCOM_URL,
+    prefix: 'docs/dop',
+    versions: [{ versionName: 'main', versionSelectorLabel: 'main', stable: true }],
+  },
 ];
+
+/** The subset of the above that should survive filtering. */
+export const newDocsetsApiPublishedProjects = ['cloud-docs', 'compass', 'node'];

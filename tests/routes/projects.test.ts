@@ -2,7 +2,7 @@ import { MongoClient } from 'mongodb';
 import request from 'supertest';
 import { setupApp } from '../../src/app';
 import { BranchResponse, RepoResponse, _resetDocsetsCache } from '../../src/services/docsets';
-import { newDocsetsApiResponse } from '../sampleData/docsetsApi';
+import { newDocsetsApiResponse, newDocsetsApiPublishedProjects } from '../sampleData/docsetsApi';
 
 const timestamp = 1685714694420;
 
@@ -37,7 +37,7 @@ describe('Test projects routes', () => {
     const res = await request(app).get(path);
     expect(res.status).toBe(200);
     const projects = JSON.parse(res.text)['data'];
-    expect(projects).toHaveLength(newDocsetsApiResponse.length);
+    expect(projects.map((p: RepoResponse) => p.project)).toEqual(newDocsetsApiPublishedProjects);
     expect(projects.find((p: any) => p?.repoName === 'cloud-docs')).toBeTruthy();
     projects.forEach((p: RepoResponse) => {
       p.branches.forEach((b: BranchResponse) => {

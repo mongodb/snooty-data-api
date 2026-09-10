@@ -1,5 +1,5 @@
 import { findAllRepos, _resetDocsetsCache } from '../../src/services/docsets';
-import { newDocsetsApiResponse } from '../sampleData/docsetsApi';
+import { newDocsetsApiResponse, newDocsetsApiPublishedProjects } from '../sampleData/docsetsApi';
 
 const okResponse = (body: unknown) => ({ ok: true, status: 200, statusText: 'OK', json: async () => body });
 
@@ -27,7 +27,7 @@ describe('docsets caching', () => {
   it('accepts both a bare array and a { data } envelope', async () => {
     fetchMock.mockResolvedValue(okResponse({ data: newDocsetsApiResponse }));
     const repos = await findAllRepos();
-    expect(repos).toHaveLength(newDocsetsApiResponse.length);
+    expect(repos.map((r) => r.project)).toEqual(newDocsetsApiPublishedProjects);
   });
 
   it('dedupes concurrent refreshes into a single upstream call', async () => {
