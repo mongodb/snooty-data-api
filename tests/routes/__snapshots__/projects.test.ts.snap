@@ -58,3 +58,70 @@ exports[`Test projects routes should return documents with 0 assets 1`] = `
   "{"type":"page","data":{"_id":"646fa1958c4f35b1d3d83ee3","page_id":"irrelevant-docs/docsworker-xlarge/master/tutorial/update-documents","filename":"tutorial/update-documents.txt","ast":{},"static_assets":[],"created_at":"2023-04-06T13:25:40.000Z","updated_at":"2023-04-06T13:25:40.000Z","deleted":false}}",
 ]
 `;
+
+exports[`Test projects routes should return the full listing payload 1`] = `
+[
+  {
+    "branches": [
+      {
+        "active": true,
+        "fullUrl": "http://mongodb.com/docs/atlas/",
+        "gitBranchName": "master",
+        "isStableBranch": true,
+        "label": "master",
+      },
+    ],
+    "displayName": "MongoDB Atlas",
+    "project": "cloud-docs",
+    "repoName": "cloud-docs",
+    "search": {
+      "categoryName": "atlas",
+      "categoryTitle": "Atlas",
+    },
+  },
+  {
+    "branches": [
+      {
+        "active": true,
+        "fullUrl": "http://mongodb.com/docs/compass/",
+        "gitBranchName": "current",
+        "isStableBranch": true,
+        "label": "Latest",
+      },
+    ],
+    "displayName": "MongoDB Compass",
+    "project": "compass",
+    "repoName": "compass",
+    "search": {
+      "categoryName": "compass",
+      "categoryTitle": "Compass",
+    },
+  },
+  {
+    "branches": [
+      {
+        "active": true,
+        "fullUrl": "http://mongodb.com/docs/drivers/node/v6.0",
+        "gitBranchName": "v6.0",
+        "isStableBranch": true,
+        "label": "6.0 (current)",
+      },
+      {
+        "active": false,
+        "fullUrl": "http://mongodb.com/docs/drivers/node/v5.0",
+        "gitBranchName": "v5.0",
+        "isStableBranch": false,
+        "label": "5.0",
+        "offlineUrl": "https://example.com/node-v5.0.tar.gz",
+      },
+    ],
+    "displayName": "Node.js Driver",
+    "project": "node",
+    "repoName": "node",
+    "search": {
+      "categoryName": "node",
+      "categoryTitle": "Node.js Driver",
+    },
+  },
+]
+`;

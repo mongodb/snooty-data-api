@@ -7,7 +7,7 @@ import {
   findLatestMetadataByProperty,
 } from '../services/database';
 import { streamData } from '../services/dataStreamer';
-import { findAllRepos } from '../services/pool';
+import { findAllRepos } from '../services/docsets';
 import { getRequestId } from '../utils';
 import { DataStreamOptions } from '../types';
 
@@ -17,7 +17,7 @@ const router = express.Router();
 router.get('/', async (req, res, next) => {
   try {
     const reqId = getRequestId(req);
-    const data = await findAllRepos({}, reqId);
+    const data = await findAllRepos(reqId);
     res.send({ data: data });
   } catch (err) {
     next(err);

@@ -8,7 +8,7 @@ import buildsRouter from './routes/builds';
 import projectsRouter from './routes/projects';
 import { connect } from './services/client';
 import { initDb } from './services/database';
-import { initPoolDb } from './services/pool';
+import { warmDocsetsCache } from './services/docsets';
 import { createMessage, initiateLogger } from './services/logger';
 import { getRequestId, isPermittedOrigin } from './utils';
 
@@ -52,11 +52,13 @@ export const setupApp = async ({ mongoClient }: AppSettings) => {
   try {
     const client = mongoClient ? mongoClient : await connect();
     initDb(client);
-    initPoolDb(client);
   } catch (e) {
     logger.error(createMessage(`Error while setting up App: ${e}`));
     throw e;
   }
+
+  // Non-blocking: a cold or failing docsets API must not prevent startup.
+  void warmDocsetsCache();
 
   const app = express();
 
