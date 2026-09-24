@@ -83,6 +83,18 @@ describe('Test projects routes', () => {
     expect(data).toMatchSnapshot();
   });
 
+  // SECBUG: path params were interpolated into a $regex unescaped, so a
+  // wildcard project matched every project's pages in one request
+  it.each(['.*', 'doc.', 'docs|node'])('should not treat %s as a regex pattern', async (project) => {
+    const res = await request(app).get(`/projects/${encodeURIComponent(project)}/master/documents`);
+    expect(res.status).toBe(200);
+    const types = res.text
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line).type);
+    expect(types).not.toContain('page');
+  });
+
   it('should return documents with 0 pages', async () => {
     const res = await request(app).get('/projects/no-pages/master/documents');
     expect(res.status).toBe(200);

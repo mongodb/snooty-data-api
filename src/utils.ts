@@ -42,3 +42,12 @@ export const isPermittedOrigin = (origin: string | undefined) => {
       url.hostname.split('.').slice(-2).join('.') === PROD_HOSTNAME)
   );
 };
+
+/**
+ * Escapes regular expression metacharacters so that a string is matched
+ * literally when interpolated into a RegExp.
+ *
+ * @param str
+ * @returns
+ */
+export const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

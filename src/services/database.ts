@@ -1,5 +1,6 @@
 import { Db, Filter, MongoClient, ObjectId } from 'mongodb';
 import { Request } from 'express';
+import { escapeRegExp } from '../utils';
 
 interface StaticAsset {
   checksum: string;
@@ -55,9 +56,11 @@ let db: Db, prodDb: Db;
 
 const getPageIdQuery = (projectName: string, branch?: string) => {
   const user = process.env.BUILDER_USER ?? 'docsworker-xlarge';
-  let pageIdPrefix = `${projectName}/${user}`;
+  // page_id segments are escaped so that they are matched as literal strings;
+  // without this, path params reach Mongo as attacker-controlled regex patterns
+  let pageIdPrefix = `${escapeRegExp(projectName)}/${escapeRegExp(user)}`;
   if (branch) {
-    pageIdPrefix += `/${branch}`;
+    pageIdPrefix += `/${escapeRegExp(branch)}`;
   }
   return { $regex: new RegExp(`^${pageIdPrefix}/`) };
 };
