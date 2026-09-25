@@ -16,6 +16,11 @@ ingress:
   hosts:
     - snooty-data-api.docs.staging.corp.mongodb.com
 
+mesh:
+  enabled: true
+  migrateToMesh:
+    enabled: true
+
 # Current limits and requests are based around metrics during expected peaks
 resources:
   limits:
