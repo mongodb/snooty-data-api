@@ -1,5 +1,11 @@
-service:
-  targetPort: 3000
+services:
+  - name: http
+    ingress: true
+    port: 80
+    probes: true
+    protocol: TCP
+    targetPort: 3000
+    type: ClusterIP
 
 env:
   PORT: 3000
