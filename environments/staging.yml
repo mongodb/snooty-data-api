@@ -24,9 +24,6 @@ ingress:
 
 mesh:
   enabled: true
-  migrateToMesh:
-    enabled: true
-    createDNS: true
 
 # Current limits and requests are based around metrics during expected peaks
 resources:
