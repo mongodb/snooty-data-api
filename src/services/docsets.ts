@@ -146,8 +146,7 @@ const mapDocsetEntry = (entry: Docset): RepoResponse => {
 };
 
 /**
- * Whether an entry belongs in the public listing. Absent `internalOnly` counts
- * as public. An entry with no `versions` array is bad data, not a docset.
+ * Whether an entry belongs in the public listing.
  */
 const isPublishedEntry = (entry: Docset) => entry.internalOnly !== true && Array.isArray(entry.versions);
 
