@@ -8,40 +8,6 @@ type EnvKeyedObject = {
   dotcomprd: string;
 };
 
-/**
- * Legacy shape, as stored in pool.repos_branches / pool.docsets and currently
- * served by the Next.js docsets API. Distinguished from the new shape by the
- * presence of `branches`.
- */
-interface LegacyBranchEntry {
-  gitBranchName: string;
-  active: boolean;
-  isStableBranch: boolean;
-  versionSelectorLabel: string;
-  urlSlug: string | null;
-  offlineUrl?: string;
-  /** Snake_case in the legacy feed; the new schema renames this to eolType. */
-  eol_type?: 'download' | 'link';
-  /** Nullable in the legacy feed; the new schema requires a boolean. */
-  noIndexing?: boolean | null;
-  [key: string]: any;
-}
-
-interface LegacyDocsetEntry {
-  repoName?: string;
-  internalOnly?: boolean;
-  project: string;
-  branches: LegacyBranchEntry[];
-  url: EnvKeyedObject | string;
-  prefix: EnvKeyedObject | string;
-  search?: Record<string, string>;
-  displayName?: string;
-}
-
-/**
- * New shape, authored as TypeScript files under platform/versioning/projects/
- * in docs-mongodb-internal. Distinguished by the presence of `versions`.
- */
 interface Version {
   versionName: string;
   active?: boolean;
@@ -64,8 +30,6 @@ interface Docset {
   versions: Version[];
 }
 
-type DocsetsApiEntry = LegacyDocsetEntry | Docset;
-
 /** END typing for the upstream docsets API */
 
 export interface BranchResponse {
@@ -85,9 +49,9 @@ export interface RepoResponse {
   branches: BranchResponse[];
 }
 
-// Only the dotcom hosts are supported. The legacy feed also carries prd/stg/dev/
-// regression keys, but a value outside this set silently resolved to an empty
-// base URL and produced "//" links, so an unknown value is a hard error.
+// Only the dotcom hosts are supported. A value outside this set silently
+// resolved to an empty base URL and produced "//" links, so an unknown value is
+// a hard error.
 const VALID_ENV_KEYS: (keyof EnvKeyedObject)[] = ['dotcomprd', 'dotcomstg'];
 
 // Read at call time rather than module load: dotenv.config() runs after module
@@ -124,59 +88,26 @@ let inFlight: Promise<RepoResponse[]> | null = null;
 
 const getRepoUrl = (baseUrl: string, prefix: string) => assertTrailingSlash(baseUrl) + assertTrailingSlash(prefix);
 
-const isNewSchema = (entry: DocsetsApiEntry): entry is Docset => Array.isArray((entry as Docset).versions);
-
-/**
- * The legacy shape stores url/prefix as env-keyed maps; the new shape stores a
- * single prefix string. Accept either so the shim works against both.
- */
-const resolveEnvKeyed = (value: EnvKeyedObject | string | undefined): string => {
-  if (typeof value === 'string') return value;
+/** Picks the host for this environment out of the docset's url map. */
+const resolveEnvKeyed = (value: EnvKeyedObject | undefined): string => {
   if (value && typeof value === 'object') return value[envUrlKey()] ?? '';
   return '';
 };
 
 /**
- * Whether a new-schema version's name is appended to the base URL.
+ * Whether a version's name is appended to the base URL.
  *
  * Both guards are load-bearing and reproduce the previous pool-backed behavior:
  *  - Single-version projects publish at the bare prefix, even when the version
  *    carries a name (e.g. a lone "stable"/"current" version lives at /docs/compass/,
- *    with /current/ served as a redirect). This mirrors the old
- *    `branches.length > 1` guard.
+ *    with /current/ served as a redirect).
  *  - "main"/"master" are never path segments, per the versionName rule: an
  *    unversioned project uses "main" as its version name but not in its URL.
  */
 const includesVersionInUrl = (versionName: string, versionCount: number) =>
   versionCount > 1 && !UNVERSIONED_NAMES.has(versionName);
 
-const mapLegacyEntry = (entry: LegacyDocsetEntry): RepoResponse => {
-  const fullBaseUrl = getRepoUrl(resolveEnvKeyed(entry.url), resolveEnvKeyed(entry.prefix));
-  // Intentionally the original pool-backed rule, verbatim: the legacy path is a
-  // passthrough and must not adopt the new schema's main/master handling.
-  const useUrlSlug = (entry.branches ?? []).length > 1;
-  const branches = (entry.branches ?? []).map((branch) => {
-    const urlSlug = useUrlSlug && branch.urlSlug ? branch.urlSlug : '';
-    return {
-      gitBranchName: branch.gitBranchName,
-      active: branch.active,
-      fullUrl: `${fullBaseUrl}${urlSlug}`,
-      label: branch.versionSelectorLabel,
-      isStableBranch: !!branch.isStableBranch,
-      offlineUrl: branch.offlineUrl,
-    };
-  });
-
-  return {
-    displayName: entry.displayName,
-    repoName: entry.repoName,
-    project: entry.project,
-    search: entry.search,
-    branches,
-  };
-};
-
-const mapNewEntry = (entry: Docset): RepoResponse => {
+const mapDocsetEntry = (entry: Docset): RepoResponse => {
   const fullBaseUrl = getRepoUrl(resolveEnvKeyed(entry.url), entry.prefix ?? '');
   const versionCount = entry.versions?.length ?? 0;
 
@@ -203,9 +134,9 @@ const mapNewEntry = (entry: Docset): RepoResponse => {
 
   return {
     displayName: entry.displayName,
-    // The new schema drops repoName entirely. The field stays in the response for
+    // The schema has no repoName. The field stays in the response for
     // compatibility, mirroring the project name. Note this is a value change for
-    // most projects: the legacy feed reported the GitHub repo id, so e.g. the
+    // most projects: the old listing reported the GitHub repo id, so e.g. the
     // Node driver moves from "docs-node" to "node".
     repoName: entry.project,
     project: entry.project,
@@ -216,25 +147,16 @@ const mapNewEntry = (entry: Docset): RepoResponse => {
 
 /**
  * Whether an entry belongs in the public listing.
- *
- * `internalOnly` is filtered here regardless of shape. Absent counts as public.
- *
- * Legacy entries additionally need a `branches` array. New-schema entries always
- * have `versions`, which is what `isNewSchema` tests.
  */
-const isPublishedEntry = (entry: DocsetsApiEntry) => {
-  if (entry.internalOnly === true) return false;
-  return isNewSchema(entry) || Array.isArray((entry as LegacyDocsetEntry).branches);
-};
+const isPublishedEntry = (entry: Docset) => entry.internalOnly !== true && Array.isArray(entry.versions);
 
 /**
  * A docset entry with no resolvable host should be treated as bad data.
- * Currently, the `cloud` docset has null url and prefix.
  * Treat as bad data rather than emitting it.
  */
-const hasResolvableHost = (entry: DocsetsApiEntry) => !!resolveEnvKeyed(entry.url);
+const hasResolvableHost = (entry: Docset) => !!resolveEnvKeyed(entry.url);
 
-export const mapDocsetsResponse = (entries: DocsetsApiEntry[]): RepoResponse[] =>
+export const mapDocsetsResponse = (entries: Docset[]): RepoResponse[] =>
   entries
     .filter(isPublishedEntry)
     .filter((entry) => {
@@ -242,7 +164,7 @@ export const mapDocsetsResponse = (entries: DocsetsApiEntry[]): RepoResponse[] =
       logger.warn(createMessage(`Skipping docset "${entry.project}": no resolvable url for this environment`));
       return false;
     })
-    .map((entry) => (isNewSchema(entry) ? mapNewEntry(entry) : mapLegacyEntry(entry as LegacyDocsetEntry)))
+    .map(mapDocsetEntry)
     .sort((a, b) => a.project.localeCompare(b.project));
 
 const fetchDocsets = async (reqId?: string): Promise<RepoResponse[]> => {
@@ -262,7 +184,7 @@ const fetchDocsets = async (reqId?: string): Promise<RepoResponse[]> => {
   }
 
   const body = await res.json();
-  const entries: DocsetsApiEntry[] = Array.isArray(body) ? body : body?.data;
+  const entries: Docset[] = Array.isArray(body) ? body : body?.data;
 
   if (!Array.isArray(entries)) {
     throw new Error('Docsets API response was not an array');
